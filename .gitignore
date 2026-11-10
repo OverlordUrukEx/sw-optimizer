@@ -10,6 +10,13 @@ wheels/
 # Virtual environments
 .venv/
 
-# Local SQLite bestiary cache
+# Local SQLite bestiary cache & personal SWEX account dumps
 data/*.sqlite
 data/*.sqlite-journal
+JmRc_EX-*.json
+JmRc_EX*
+*-59255826.json
+
+# Ensure static bestiary map and sanitized demo account are tracked
+!src/data/monster_map.json
+!src/data/demo_account.json

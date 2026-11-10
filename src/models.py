@@ -287,11 +287,13 @@ class Artifact(BaseModel):
         parsed = dict(data)
         if "artifact_id" in parsed and "rid" not in parsed:
             parsed["rid"] = parsed["artifact_id"]
-        pri = parsed.get("pri_eff")
+        pri = parsed.get("pri_eff") or parsed.get("pri_effect")
         if isinstance(pri, (list, tuple)) and len(pri) >= 2:
             parsed["pri_eff"] = (int(pri[0]), int(pri[1]))
         else:
             parsed["pri_eff"] = (100, 0)
+        if "sec_eff" not in parsed and "sec_effects" in parsed:
+            parsed["sec_eff"] = parsed["sec_effects"]
         return parsed
 
     @property
@@ -308,7 +310,7 @@ class Artifact(BaseModel):
 
 
 class MonsterMasterData(BaseModel):
-    """Metadatos de especie de monstruo obtenidos/cacheados desde SWARFARM."""
+    """Monster species metadata cached locally from SWARFARM."""
 
     com2us_id: int
     name: str
@@ -320,9 +322,15 @@ class MonsterMasterData(BaseModel):
     skills: list[int] = Field(default_factory=list)
     leader_skill: dict[str, Any] | None = None
 
+    @property
+    def icon_url(self) -> str:
+        if self.image_filename:
+            return f"https://swarfarm.com/static/herders/images/monsters/{self.image_filename}"
+        return ""
+
 
 class Monster(BaseModel):
-    """Instancia de un monstruo en la cuenta del jugador (unit_list en SWEX)."""
+    """Monster instance in the player's account (unit_list in SWEX)."""
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -331,6 +339,8 @@ class Monster(BaseModel):
     name: str = ""
     element: str = "Unknown"
     archetype: str = "Unknown"
+    base_stars: int = 5
+    awaken_level: int = 1
     image_filename: str = ""
     unit_level: int = 40
     unit_class: int = Field(default=6, alias="class")
@@ -350,11 +360,25 @@ class Monster(BaseModel):
 
     @model_validator(mode="after")
     def _compute_base_hp(self) -> Monster:
-        """Regla crítica de dominio: base_hp = con * 15."""
+        """Critical domain rule: base_hp = con * 15."""
         self.base_hp = self.con * 15
         if not self.name:
-            self.name = f"Monster #{self.unit_master_id}"
+            self.name = f"Unknown Monster (#{self.unit_master_id}) - [{self.element}]"
         return self
+
+    @property
+    def icon_url(self) -> str:
+        """Full SWARFARM static URL for the monster icon, or SVG placeholder if missing."""
+        if self.image_filename:
+            return f"https://swarfarm.com/static/herders/images/monsters/{self.image_filename}"
+        return (
+            "data:image/svg+xml;utf8,"
+            "<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'>"
+            "<rect width='64' height='64' rx='12' fill='%23262730'/>"
+            "<text x='50%25' y='54%25' dominant-baseline='middle' text-anchor='middle' "
+            "fill='%23f0b90b' font-family='sans-serif' font-size='24' font-weight='bold'>?</text>"
+            "</svg>"
+        )
 
 
 class MonsterStats(BaseModel):

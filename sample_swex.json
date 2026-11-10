@@ -8,7 +8,7 @@
   "unit_list": [
     {
       "unit_id": 1001,
-      "unit_master_id": 13513,
+      "unit_master_id": 13413,
       "unit_level": 40,
       "class": 6,
       "con": 615,
@@ -640,7 +640,7 @@
     },
     {
       "unit_id": 1003,
-      "unit_master_id": 18114,
+      "unit_master_id": 19314,
       "unit_level": 40,
       "class": 6,
       "con": 626,
@@ -956,7 +956,7 @@
     },
     {
       "unit_id": 1004,
-      "unit_master_id": 15714,
+      "unit_master_id": 19114,
       "unit_level": 40,
       "class": 6,
       "con": 681,
@@ -1272,7 +1272,7 @@
     },
     {
       "unit_id": 1005,
-      "unit_master_id": 10615,
+      "unit_master_id": 11035,
       "unit_level": 40,
       "class": 6,
       "con": 659,
@@ -1588,7 +1588,7 @@
     },
     {
       "unit_id": 1006,
-      "unit_master_id": 11012,
+      "unit_master_id": 11532,
       "unit_level": 40,
       "class": 6,
       "con": 725,
@@ -1604,7 +1604,7 @@
     },
     {
       "unit_id": 1007,
-      "unit_master_id": 11013,
+      "unit_master_id": 11533,
       "unit_level": 40,
       "class": 6,
       "con": 758,
@@ -1936,7 +1936,7 @@
     },
     {
       "unit_id": 1009,
-      "unit_master_id": 19813,
+      "unit_master_id": 18913,
       "unit_level": 40,
       "class": 6,
       "con": 790,
@@ -1952,7 +1952,7 @@
     },
     {
       "unit_id": 1010,
-      "unit_master_id": 16213,
+      "unit_master_id": 15713,
       "unit_level": 40,
       "class": 6,
       "con": 725,
@@ -1968,7 +1968,7 @@
     },
     {
       "unit_id": 1011,
-      "unit_master_id": 24713,
+      "unit_master_id": 25313,
       "unit_level": 40,
       "class": 6,
       "con": 736,
@@ -1984,7 +1984,7 @@
     },
     {
       "unit_id": 1012,
-      "unit_master_id": 24011,
+      "unit_master_id": 24511,
       "unit_level": 40,
       "class": 6,
       "con": 714,
