@@ -1,4 +1,4 @@
-"""Modular UI components in Spanish (es-LA / es) for Onboarding Empty State, Demo Account Loader, Tooltips, and HelpGuideModal."""
+"""Modular UI components localized in Spanish (es-LA / es) for Onboarding, Demo Loader, Tooltips, and HelpGuideModal."""
 
 from __future__ import annotations
 
@@ -7,44 +7,36 @@ from pathlib import Path
 
 import streamlit as st
 
-from src.i18n import (
-    ES_DICT,
-    HELP_STEP_1_SWEX_MD,
-    HELP_STEP_2_STATS_MD,
-    HELP_STEP_3_OPTIMIZER_MD,
-    STAT_TOOLTIPS_ES,
-    TOOLTIPS_ES,
-)
+from src.i18n import ES_LOCALE, TOOLTIPS_ES
 from src.models import AccountProfile
 from src.monster_data_service import MonsterDataService
 from src.parser import parse_swex_json
 
 DEMO_ACCOUNT_PATH = Path(__file__).resolve().parent / "data" / "demo_account.json"
 
-# Centralized technical UI tooltips in Spanish (imported from src.i18n)
+# Export centralized Spanish tooltips dictionary
 TOOLTIPS: dict[str, str] = TOOLTIPS_ES
 
 
 class HelpGuideModal:
     """
-    Structured 3-step User Help & Documentation guide in Spanish covering:
-    1) Exportación con SWEX
-    2) Mapeo de Estadísticas (`CON * 15`), Runas Antiguas (Ancient) y Grinds (`base + grind`)
-    3) Uso del Optimizador de Builds y Speed Tuning
+    Structured 3-step User Help & Documentation guide in Spanish covering SWEX data extraction,
+    Summoners War domain math (CON * 15, Grinds, Ancient Runes), and running optimizations.
     """
 
-    STEP_1_SWEX_MD = HELP_STEP_1_SWEX_MD
-    STEP_2_STATS_MD = HELP_STEP_2_STATS_MD
-    STEP_3_OPTIMIZER_MD = HELP_STEP_3_OPTIMIZER_MD
+    STEP_1_SWEX_MD: str = ES_LOCALE["help_modal"]["step_1_markdown"]
+    STEP_2_STATS_MD: str = ES_LOCALE["help_modal"]["step_2_markdown"]
+    STEP_3_OPTIMIZER_MD: str = ES_LOCALE["help_modal"]["step_3_markdown"]
 
     @classmethod
     def render_body(cls) -> None:
         """Renders the tabbed 3-step documentation content in Spanish."""
+        modal_i18n = ES_LOCALE["help_modal"]
         tab1, tab2, tab3 = st.tabs(
             [
-                "1️⃣ Exportación con SWEX",
-                "2️⃣ Estadísticas, Runas Antiguas y Grinds",
-                "3️⃣ Uso del Optimizador",
+                modal_i18n["tab_1"],
+                modal_i18n["tab_2"],
+                modal_i18n["tab_3"],
             ]
         )
         with tab1:
@@ -55,21 +47,20 @@ class HelpGuideModal:
             st.markdown(cls.STEP_3_OPTIMIZER_MD)
 
         st.divider()
-        st.markdown("#### 💡 Glosario Rápido de Estadísticas y Términos Competitivos")
-        for stat_abbr, stat_desc in STAT_TOOLTIPS_ES.items():
-            st.markdown(f"- **{stat_abbr}:** {stat_desc}")
+        st.markdown(modal_i18n["glossary_title"])
         for key, label in [
+            ("effective_hp", "EHP (Vida Efectiva)"),
             ("damage_multiplier", "Multiplicador de Daño"),
             ("include_equipped_runes", "Incluir runas equipadas"),
             ("broken_sets", "Permitir Sets Rotos (Broken)"),
-            ("intangible_wildcard", "Runa Comodín Intangible"),
+            ("intangible_wildcard", "Runa Intangible (Comodín)"),
         ]:
             st.markdown(f"- **{label}:** {TOOLTIPS[key]}")
 
 
-@st.dialog("📖 Guía de Uso — SW-OptiPy", width="large")
+@st.dialog(ES_LOCALE["help_modal"]["dialog_title"], width="large")
 def open_help_guide_dialog() -> None:
-    """Opens the Streamlit modal dialog containing the Spanish HelpGuideModal content."""
+    """Opens the Streamlit modal dialog containing the HelpGuideModal content."""
     HelpGuideModal.render_body()
 
 
@@ -118,19 +109,19 @@ def render_top_navbar(
 ) -> None:
     """
     Renders the persistent top navigation bar in Spanish featuring:
-    - App branding (`SW-OptiPy`)
-    - Active `wizard_name` badge and account resources (`Nivel`, `Maná`, `Cristales`)
-    - Quick action buttons: `Probar Cuenta Demo` (when empty), `Cambiar Cuenta / Limpiar`, and `Guía de Uso`
+    - App branding
+    - Active `wizard_name` badge + Nivel, Maná, Cristales
+    - 'Cambiar Cuenta / Limpiar' button
+    - 'Guía de Uso' button opening `HelpGuideModal`
     """
-    nav_dict = ES_DICT["navbar"]
-    app_dict = ES_DICT["app"]
-    nav_cols = st.columns([3.0, 3.2, 1.5, 1.3])
+    nav_i18n = ES_LOCALE["navbar"]
+    nav_cols = st.columns([2.8, 3.6, 1.4, 1.2])
 
     with nav_cols[0]:
         st.markdown(
-            f"<div style='font-size:1.35rem;font-weight:800;letter-spacing:-0.02em;'>"
-            f"{app_dict['title']} <span style='font-size:0.85rem;font-weight:500;color:#9ca3af;'>"
-            f"| {app_dict['subtitle']}</span></div>",
+            f"<div style='font-size:1.3rem;font-weight:800;letter-spacing:-0.02em;'>"
+            f"⚡ SW-OptiPy <span style='font-size:0.82rem;font-weight:500;color:#9ca3af;'>"
+            f"| {ES_LOCALE['app']['subtitle']}</span></div>",
             unsafe_allow_html=True,
         )
 
@@ -142,24 +133,24 @@ def render_top_navbar(
                 else "rgba(16, 185, 129, 0.18)"
             )
             badge_border = "#f59e0b" if is_demo_mode else "#10b981"
-            mode_tag = (
-                nav_dict["demo_badge"] if is_demo_mode else nav_dict["active_badge"]
-            )
+            mode_tag = nav_i18n["demo_badge"] if is_demo_mode else nav_i18n["active_badge"]
             st.markdown(
                 f"<div style='display:inline-flex;flex-wrap:wrap;align-items:center;gap:8px;padding:6px 12px;"
                 f"border-radius:999px;background:{badge_bg};border:1px solid {badge_border};"
-                f"font-size:0.83rem;font-weight:600;'>"
+                f"font-size:0.82rem;font-weight:600;'>"
                 f"<span>{mode_tag}:</span> <code style='color:#fff;'>{profile.wizard_name}</code> "
-                f"<span style='color:#e5e7eb;'>· {nav_dict['level']}: <b>{profile.wizard_level}</b></span> "
-                f"<span style='color:#60a5fa;'>· {nav_dict['mana']}: <b>{profile.wizard_mana:,}</b></span> "
-                f"<span style='color:#f472b6;'>· {nav_dict['crystals']}: <b>{profile.wizard_crystal:,}</b></span>"
+                f"<span style='color:#d1d5db;'>"
+                f"{nav_i18n['level']} {profile.wizard_level} · "
+                f"💎 {nav_i18n['crystals']}: {profile.wizard_crystal:,} · "
+                f"🪙 {nav_i18n['mana']}: {profile.wizard_mana:,}"
+                f"</span>"
                 f"</div>",
                 unsafe_allow_html=True,
             )
         else:
             st.markdown(
                 f"<div style='padding:6px 12px;color:#9ca3af;font-size:0.85rem;'>"
-                f"{nav_dict['no_account']}"
+                f"{nav_i18n['no_account_loaded']}"
                 f"</div>",
                 unsafe_allow_html=True,
             )
@@ -167,39 +158,27 @@ def render_top_navbar(
     with nav_cols[2]:
         if profile is not None:
             if st.button(
-                f"🔄 {nav_dict['switch_or_clear']}",
+                f"🔄 {nav_i18n['clear_switch_account']}",
                 use_container_width=True,
-                help="Descarga la cuenta actual de la memoria y regresa a la pantalla inicial.",
+                help="Cerrar la cuenta actual y volver a la pantalla de inicio para cargar otro archivo JSON.",
             ):
                 clear_account_state()
-                st.rerun()
-        else:
-            if st.button(
-                f"🎮 {nav_dict['try_demo']}",
-                use_container_width=True,
-                key="navbar_try_demo_btn",
-                help="Carga inmediatamente la cuenta de demostración sanitizada (Demo_Summoner).",
-            ):
-                demo_prof = load_demo_account_profile()
-                activate_account_profile(
-                    demo_prof, is_demo=True, file_signature="demo_account"
-                )
                 st.rerun()
 
     with nav_cols[3]:
         if st.button(
-            f"📖 {nav_dict['help_guide']}",
+            f"📖 {nav_i18n['help_guide']}",
             use_container_width=True,
-            help="Abre la guía paso a paso sobre exportación con SWEX, Runas Antiguas/Grinds y uso del Optimizador.",
+            help="Abrir la guía paso a paso sobre exportación SWEX, estadísticas y uso del optimizador.",
         ):
             open_help_guide_dialog()
 
     if is_demo_mode and profile is not None:
         st.info(
-            nav_dict["demo_banner"].format(
+            nav_i18n["demo_banner"].format(
                 wizard_name=profile.wizard_name,
-                monsters=len(profile.monsters),
-                runes=len(profile.runes),
+                unit_count=len(profile.monsters),
+                rune_count=len(profile.runes),
             )
         )
 
@@ -207,11 +186,11 @@ def render_top_navbar(
 def render_empty_state_hero(monster_service: MonsterDataService) -> None:
     """
     Renders the interactive Onboarding Hero / Empty State in Spanish when no account JSON is loaded:
-    - Primary Drag & Drop JSON Upload Zone (`Cargar JSON`)
-    - Prominent `Probar Cuenta Demo` CTA button
-    - Quick 3-step feature highlights
+    - Primary Drag & Drop JSON Upload Zone ('Cargar JSON')
+    - Prominent 'Probar Cuenta Demo' button
+    - Quick 3-step overview cards
     """
-    ob = ES_DICT["onboarding"]
+    ob = ES_LOCALE["onboarding"]
     st.markdown(
         f"""
         <div style="text-align:center;padding:28px 20px 18px 20px;border-radius:16px;
@@ -220,7 +199,7 @@ def render_empty_state_hero(monster_service: MonsterDataService) -> None:
             <h1 style="margin:0;font-size:2.1rem;color:#f8fafc;">
                 {ob['welcome_title']}
             </h1>
-            <p style="font-size:1.05rem;color:#cbd5e1;max-width:760px;margin:10px auto 0 auto;">
+            <p style="font-size:1.05rem;color:#cbd5e1;max-width:740px;margin:10px auto 0 auto;">
                 {ob['welcome_subtitle']}
             </p>
         </div>
@@ -234,10 +213,10 @@ def render_empty_state_hero(monster_service: MonsterDataService) -> None:
         st.markdown(f"### {ob['upload_section_title']}")
         st.caption(ob["upload_section_caption"])
         uploaded_file = st.file_uploader(
-            ob["upload_dropzone_label"],
+            ob["dropzone_label"],
             type=["json"],
             key="hero_swex_uploader",
-            help=ob["upload_dropzone_help"],
+            help=ob["dropzone_help"],
         )
         if uploaded_file is not None:
             raw_bytes = uploaded_file.getvalue()
@@ -251,14 +230,14 @@ def render_empty_state_hero(monster_service: MonsterDataService) -> None:
                 )
                 st.rerun()
             except Exception as exc:
-                st.error(f"No se pudo procesar el archivo JSON de SWEX: {exc}")
+                st.error(f"Error al procesar el archivo JSON de SWEX: {exc}")
 
     with col_demo:
         st.markdown(f"### {ob['demo_section_title']}")
         st.caption(ob["demo_section_caption"])
         st.markdown("<div style='height:12px;'></div>", unsafe_allow_html=True)
         if st.button(
-            f"{ob['try_demo_cta']} (Demo_Summoner)",
+            ob["try_demo_button"],
             type="primary",
             use_container_width=True,
             help=ob["try_demo_help"],
@@ -270,7 +249,7 @@ def render_empty_state_hero(monster_service: MonsterDataService) -> None:
             st.rerun()
 
         if st.button(
-            ob["open_guide_cta"],
+            ob["read_guide_button"],
             use_container_width=True,
         ):
             open_help_guide_dialog()
