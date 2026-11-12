@@ -411,6 +411,9 @@ class AccountProfile(BaseModel):
 
     wizard_id: int = 0
     wizard_name: str = "Summoner"
+    wizard_level: int = 50
+    wizard_mana: int = 0
+    wizard_crystal: int = 0
     monsters: dict[int, Monster] = Field(default_factory=dict)
     runes: dict[int, Rune] = Field(default_factory=dict)
     artifacts: dict[int, Artifact] = Field(default_factory=dict)

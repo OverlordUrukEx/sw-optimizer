@@ -1,4 +1,4 @@
-"""Streamlit Web UI for SW-OptiPy featuring Onboarding Empty State, Demo Mode, HelpGuideModal, and O(1) Bestiary."""
+"""Streamlit Web UI in Spanish (es-LA / es) for SW-OptiPy featuring Onboarding Empty State, Demo Mode, HelpGuideModal, and O(1) Bestiary."""
 
 from __future__ import annotations
 
@@ -23,6 +23,14 @@ from src.calculator import (
     calculate_rune_efficiency,
     simulate_speed_tuning,
 )
+from src.i18n import (
+    ES_DICT,
+    RUNE_SET_LABELS_ES,
+    STAT_TOOLTIPS_ES,
+    get_element_badge_es,
+    normalize_element_to_en,
+    translate_element_es,
+)
 from src.models import (
     AccountProfile,
     Monster,
@@ -30,10 +38,7 @@ from src.models import (
     SET_ID_MAP,
     STAT_ID_MAP,
 )
-from src.monster_data_service import (
-    ELEMENT_BADGE_MAP,
-    MonsterDataService,
-)
+from src.monster_data_service import MonsterDataService
 from src.optimizer import (
     OptimizationConstraints,
     OptimizedBuild,
@@ -47,20 +52,21 @@ from src.ui_components import (
     activate_account_profile,
     clear_account_state,
     load_demo_account_profile,
+    open_help_guide_dialog,
     render_empty_state_hero,
     render_top_navbar,
 )
 
-ALL_ELEMENTS: list[str] = ["Water", "Fire", "Wind", "Light", "Dark"]
+ALL_ELEMENTS: list[str] = ["Agua", "Fuego", "Viento", "Luz", "Oscuridad"]
 
 
 def get_element_badge(element: str) -> str:
-    """Returns a formatted Element badge (e.g., '🔥 Fire')."""
-    return ELEMENT_BADGE_MAP.get(element, f"❓ {element}")
+    """Returns a formatted Spanish Element badge (e.g., '🔥 Fuego', '🌪️ Viento')."""
+    return get_element_badge_es(element)
 
 
 def format_monster_label(monster: Monster) -> str:
-    """Formats a monster option label with resolved Name, Element badge, and Stars."""
+    """Formats a monster option label with resolved Name, Spanish Element badge, and Stars."""
     badge = get_element_badge(monster.element)
     stars = f"{monster.base_stars}★"
     return f"{monster.name} — {badge} ({stars})"
@@ -71,16 +77,25 @@ def filter_monsters(
     search_query: str = "",
     elements: Iterable[str] | None = None,
 ) -> list[Monster]:
-    """Filters and sorts monsters by name substring (or ID) and selected elements."""
+    """Filters and sorts monsters by name substring (or ID) and selected elements (supports both ES and EN)."""
     query = search_query.strip().lower()
-    allowed_elements = {e.capitalize() for e in elements} if elements else set()
+    allowed_elements_en = (
+        {normalize_element_to_en(e) for e in elements} if elements else set()
+    )
 
     matched: list[Monster] = []
     for monster in monsters:
-        if allowed_elements and monster.element.capitalize() not in allowed_elements:
+        mon_element_en = normalize_element_to_en(monster.element)
+        mon_element_es = translate_element_es(monster.element)
+        if allowed_elements_en and mon_element_en not in allowed_elements_en:
             continue
         if query:
-            searchable = f"{monster.name.lower()} {monster.element.lower()} {monster.unit_master_id}"
+            searchable = (
+                f"{monster.name.lower()} "
+                f"{monster.element.lower()} "
+                f"{mon_element_es.lower()} "
+                f"{monster.unit_master_id}"
+            )
             if query not in searchable:
                 continue
         matched.append(monster)
@@ -89,7 +104,7 @@ def filter_monsters(
 
 
 def render_monster_card(monster: Monster, subtitle: str = "") -> None:
-    """Renders a visual monster card with SWARFARM avatar icon, resolved name, and element badge."""
+    """Renders a visual monster card with SWARFARM avatar icon, resolved name, and Spanish element badge."""
     badge = get_element_badge(monster.element)
     stars_str = "★" * max(1, min(6, monster.base_stars))
     sub_html = (
@@ -188,7 +203,7 @@ def build_monsters_dataframe(
     search_query: str = "",
     selected_elements: list[str] | None = None,
 ) -> pl.DataFrame:
-    """Builds a Polars DataFrame of monsters with Avatar URL, resolved Name, Element badge, and Base Stats."""
+    """Builds a Polars DataFrame of monsters with Spanish columns and competitive stat abbreviations."""
     filtered = filter_monsters(
         profile.monsters.values(),
         search_query=search_query,
@@ -199,16 +214,16 @@ def build_monsters_dataframe(
         rows.append(
             {
                 "Avatar": m.icon_url,
-                "Monster": m.name,
-                "Element": get_element_badge(m.element),
-                "Stars": f"{m.base_stars}★",
-                "Level": m.unit_level,
-                "Base HP": m.base_hp,
-                "Base ATK": m.atk,
-                "Base DEF": m.def_,
-                "Base SPD": m.spd,
-                "PVE Runes": len(m.runes),
-                "RTA Runes": len(m.rta_runes),
+                "Monstruo": m.name,
+                "Elemento": get_element_badge(m.element),
+                "Estrellas": f"{m.base_stars}★",
+                "Nivel": m.unit_level,
+                "HP Base": m.base_hp,
+                "ATK Base": m.atk,
+                "DEF Base": m.def_,
+                "SPD Base": m.spd,
+                "Runas PVE": len(m.runes),
+                "Runas RTA": len(m.rta_runes),
             }
         )
     if not rows:
@@ -217,7 +232,8 @@ def build_monsters_dataframe(
 
 
 def _build_runes_dataframe(profile: AccountProfile) -> pl.DataFrame:
-    """Builds the Polars DataFrame for the Rune Dashboard with resolved Monster names and Element badges."""
+    """Builds the Polars DataFrame for the Rune Dashboard in Spanish."""
+    tbl = ES_DICT["tables"]
     rows: list[dict[str, Any]] = []
     for r in profile.runes.values():
         if r.occupied_id in profile.monsters:
@@ -225,24 +241,32 @@ def _build_runes_dataframe(profile: AccountProfile) -> pl.DataFrame:
             pve_owner = f"{m_pve.name} ({get_element_badge(m_pve.element)})"
             owner_icon = m_pve.icon_url
         else:
-            pve_owner = "Inventory"
+            pve_owner = tbl["inventory_free"]
             owner_icon = ""
 
         if r.rta_occupied_id in profile.monsters:
             m_rta = profile.monsters[r.rta_occupied_id]
             rta_owner = f"{m_rta.name} ({get_element_badge(m_rta.element)})"
         else:
-            rta_owner = "RTA Inventory"
+            rta_owner = tbl["inventory_rta_free"]
+
+        grade_label = (
+            f"{r.stars}★ {tbl['ancient_rune']}"
+            if r.is_ancient
+            else f"{r.stars}★ {tbl['normal_rune']}"
+        )
 
         rows.append(
             {
                 "Rune ID": r.rune_id,
                 "Owner Icon": owner_icon,
+                "Equipada en": pve_owner,
                 "Equipada PVE": pve_owner,
                 "Equipada RTA": rta_owner,
                 "Slot": r.slot_no,
                 "Set": r.set_name,
-                "Grado": f"{r.stars}★ {'Ancient' if r.is_ancient else 'Normal'}",
+                "Estrellas": f"{r.stars}★",
+                "Grado": grade_label,
                 "Nivel": f"+{r.upgrade_curr}",
                 "Main Stat": f"{STAT_ID_MAP.get(r.main_stat_id, '')} +{r.main_stat_val}",
                 "Innate": (
@@ -251,8 +275,8 @@ def _build_runes_dataframe(profile: AccountProfile) -> pl.DataFrame:
                     else "-"
                 ),
                 "SPD": r.get_stat_total(8),
-                "CRate%": r.get_stat_total(9),
-                "CDmg%": r.get_stat_total(10),
+                "CR / Tasa Crít.": r.get_stat_total(9),
+                "CD / Daño Crít.": r.get_stat_total(10),
                 "HP%": r.get_stat_total(2),
                 "ATK%": r.get_stat_total(4),
                 "DEF%": r.get_stat_total(6),
@@ -269,17 +293,55 @@ def _build_runes_dataframe(profile: AccountProfile) -> pl.DataFrame:
     return pl.DataFrame(rows).sort("Eficiencia (%)", descending=True)
 
 
+def _build_artifacts_dataframe(profile: AccountProfile) -> pl.DataFrame:
+    """Builds the Polars DataFrame for the Artifacts table in Spanish."""
+    tbl = ES_DICT["tables"]
+    pri_stat_names = {1: "HP flat", 100: "HP flat", 3: "ATK flat", 101: "ATK flat", 5: "DEF flat", 102: "DEF flat"}
+    rows: list[dict[str, Any]] = []
+    for a in profile.artifacts.values():
+        if a.occupied_id in profile.monsters:
+            m_pve = profile.monsters[a.occupied_id]
+            pve_owner = f"{m_pve.name} ({get_element_badge(m_pve.element)})"
+        else:
+            pve_owner = tbl["inventory_free"]
+
+        if a.rta_occupied_id in profile.monsters:
+            m_rta = profile.monsters[a.rta_occupied_id]
+            rta_owner = f"{m_rta.name} ({get_element_badge(m_rta.element)})"
+        else:
+            rta_owner = tbl["inventory_rta_free"]
+
+        pri_name = pri_stat_names.get(a.pri_eff[0], f"ID {a.pri_eff[0]}")
+        rows.append(
+            {
+                "ID Artefacto": a.artifact_id,
+                "Equipada en": pve_owner,
+                "Equipada RTA": rta_owner,
+                "Slot": "Atributo (Izq.)" if a.slot == 1 else "Arquetipo (Der.)",
+                "Estrellas": f"{a.natural_rank}★",
+                "Nivel": f"+{a.level}",
+                "Main Stat": f"{pri_name} +{a.pri_eff[1]}",
+                "Substats": len(a.sec_eff),
+            }
+        )
+    if not rows:
+        return pl.DataFrame()
+    return pl.DataFrame(rows)
+
+
 def render_sidebar() -> tuple[AccountProfile | None, Literal["pve", "rta"], float, float]:
-    st.sidebar.title("⚡ SW-OptiPy")
-    st.sidebar.caption("Rune & Speed Tuning Optimizer (PVE / Siege / RTA)")
+    sb = ES_DICT["sidebar"]
+    nav = ES_DICT["navbar"]
+    st.sidebar.title(sb["title"])
+    st.sidebar.caption(sb["caption"])
 
     monster_service: MonsterDataService = st.session_state.monster_service
 
     uploaded = st.sidebar.file_uploader(
-        "Import SWEX JSON",
+        f"📂 {sb['upload_label']}",
         type=["json"],
         key="sidebar_swex_uploader",
-        help="Upload the .json file exported by Summoners War Exporter (SWEX). Zero N+1 API calls.",
+        help=sb["upload_help"],
     )
 
     if uploaded is not None:
@@ -291,164 +353,237 @@ def render_sidebar() -> tuple[AccountProfile | None, Literal["pve", "rta"], floa
                     raw_bytes, bestiary=monster_service, fetch_remote_bestiary=False
                 )
                 activate_account_profile(parsed, is_demo=False, file_signature=file_hash)
-                st.sidebar.success(f"Loaded account: {parsed.wizard_name}")
+                st.sidebar.success(f"Cuenta cargada: {parsed.wizard_name}")
             except Exception as exc:
-                st.sidebar.error(f"Invalid SWEX JSON file: {exc}")
+                st.sidebar.error(f"Archivo JSON de SWEX inválido: {exc}")
 
     if st.sidebar.button(
-        "🎮 Load Demo Account",
+        sb["load_demo_btn"],
         use_container_width=True,
-        help="Load src/data/demo_account.json (Demo_Summoner) into state.",
+        help=sb["load_demo_help"],
     ):
         demo_prof = load_demo_account_profile(monster_service=monster_service)
         activate_account_profile(demo_prof, is_demo=True, file_signature="demo_account")
         st.rerun()
 
+    if st.session_state.profile is not None:
+        if st.sidebar.button(
+            sb["clear_account_btn"],
+            use_container_width=True,
+            help=sb["clear_account_help"],
+        ):
+            clear_account_state()
+            st.rerun()
+
     if st.sidebar.button(
-        "🔄 Refresh SWARFARM Bestiary Map",
+        sb["help_guide_btn"],
         use_container_width=True,
-        help="Sync all monsters from SWARFARM v2 API into src/data/monster_map.json.",
+        help=sb["help_guide_help"],
+    ):
+        open_help_guide_dialog()
+
+    if st.sidebar.button(
+        sb["sync_bestiary_btn"],
+        use_container_width=True,
+        help=sb["sync_bestiary_help"],
     ):
         try:
             count = monster_service.sync_from_swarfarm(force=True)
-            st.sidebar.success(f"Synced {count:,} monsters into local map.")
+            st.sidebar.success(f"Sincronizados {count:,} monstruos en el mapa local.")
         except Exception as exc:
             st.sidebar.warning(
-                f"Offline fallback active ({monster_service.size:,} monsters): {exc}"
+                f"Modo offline activo ({monster_service.size:,} monstruos): {exc}"
             )
 
     profile: AccountProfile | None = st.session_state.profile
 
     mode_label = st.sidebar.radio(
-        "Active Inventory Mode",
-        options=["Normal Mode (PVE / Siege / Arena)", "RTA Mode (World Arena)"],
+        sb["inventory_mode_label"],
+        options=[sb["mode_pve"], sb["mode_rta"]],
         index=0 if st.session_state.inventory_mode == "pve" else 1,
-        help="Switch between PVE and RTA equipment & rune lock pools independently.",
+        help=sb["inventory_mode_help"],
     )
     mode: Literal["pve", "rta"] = "rta" if "RTA" in mode_label else "pve"
     st.session_state.inventory_mode = mode
 
     st.sidebar.divider()
-    st.sidebar.subheader("Global Combat Bonuses")
+    st.sidebar.subheader(sb["combat_bonuses_header"])
     sky_totem_pct = st.sidebar.slider(
-        "Sky Totem SPD (%)",
+        sb["sky_totem_label"],
         0,
         15,
         15,
-        help="In-game Sky Tribe Totem bonus (+15% Base SPD at max level).",
+        help=sb["sky_totem_help"],
     )
     leader_spd_pct = st.sidebar.selectbox(
-        "SPD Leader Skill (%)",
+        sb["leader_spd_label"],
         options=[0, 10, 15, 19, 21, 24, 28, 30, 33],
         index=0,
-        help="Team Leader Skill speed bonus percentage applied to Base SPD.",
+        help=sb["leader_spd_help"],
     )
 
     st.sidebar.divider()
     if profile is not None:
         st.sidebar.markdown(
-            f"**Summoner:** `{profile.wizard_name}`  \n"
-            f"**Monsters:** `{len(profile.monsters)}`  \n"
-            f"**Total Runes:** `{len(profile.runes)}`  \n"
-            f"**Bestiary Map (O(1)):** `{monster_service.size:,}` species  \n"
-            f"**Locked PVE:** `{len(profile.locked_runes_pve)}` | **RTA:** `{len(profile.locked_runes_rta)}`"
+            f"**Invocador:** `{profile.wizard_name}`  \n"
+            f"**{nav['level']}:** `{profile.wizard_level}`  \n"
+            f"**{nav['mana']}:** `{profile.wizard_mana:,}`  \n"
+            f"**{nav['crystals']}:** `{profile.wizard_crystal:,}`  \n"
+            f"**Monstruos:** `{len(profile.monsters)}`  \n"
+            f"**Runas:** `{len(profile.runes)}` | **Artefactos:** `{len(profile.artifacts)}`  \n"
+            f"**Bestiario O(1):** `{monster_service.size:,}` especies  \n"
+            f"**Bloqueadas PVE:** `{len(profile.locked_runes_pve)}` | **RTA:** `{len(profile.locked_runes_rta)}`"
         )
     else:
         st.sidebar.caption(
-            f"Bestiary Map ready (`{monster_service.size:,}` species). No account loaded."
+            f"Bestiario listo (`{monster_service.size:,}` especies). Ninguna cuenta cargada."
         )
 
     return profile, mode, sky_totem_pct / 100.0, leader_spd_pct / 100.0
 
 
 def render_tab_dashboard(profile: AccountProfile) -> None:
-    st.subheader("👾 Monster Box & Bestiary Explorer")
-    mf1, mf2 = st.columns([2, 2])
-    monster_search = mf1.text_input(
-        "🔍 Search Monster by Name",
-        value="",
-        placeholder="e.g. Lapis, Abigail, Icaru, Spectra, Demo_Homu...",
-        key="dashboard_monster_search",
-    )
-    monster_elements = mf2.multiselect(
-        "Filter by Element",
-        options=ALL_ELEMENTS,
-        default=[],
-        format_func=get_element_badge,
-        key="dashboard_monster_elements",
+    tbl = ES_DICT["tables"]
+    sub_mon, sub_runes, sub_arts = st.tabs(
+        [
+            f"👾 {tbl['monsters']} ({len(profile.monsters)})",
+            f"💎 {tbl['runes']} ({len(profile.runes)})",
+            f"🏺 {tbl['artifacts']} ({len(profile.artifacts)})",
+        ]
     )
 
-    monsters_df = build_monsters_dataframe(
-        profile, search_query=monster_search, selected_elements=monster_elements
-    )
-    if monsters_df.is_empty():
-        st.info("No monsters match the current name/element filter.")
-    else:
-        st.dataframe(
-            monsters_df,
-            use_container_width=True,
-            hide_index=True,
-            column_config={
-                "Avatar": st.column_config.ImageColumn("Avatar", width="small"),
-                "Base HP": st.column_config.NumberColumn(
-                    "Base HP", help="Calculated automatically as CON * 15."
-                ),
-            },
+    with sub_mon:
+        st.subheader(f"👾 {tbl['monsters']} y Explorador de Bestiario")
+        mf1, mf2 = st.columns([2, 2])
+        monster_search = mf1.text_input(
+            f"🔍 {tbl['search_monster']}",
+            value="",
+            placeholder=tbl["search_monster"],
+            key="dashboard_monster_search",
+        )
+        monster_elements = mf2.multiselect(
+            tbl["element"],
+            options=ALL_ELEMENTS,
+            default=[],
+            format_func=get_element_badge,
+            key="dashboard_monster_elements",
         )
 
-    st.divider()
-    st.subheader("📊 Rune Inventory Dashboard (Barion Efficiency Formula)")
-    df = _build_runes_dataframe(profile)
-    if df.is_empty():
-        st.warning("No runes found in the current profile.")
-        return
+        monsters_df = build_monsters_dataframe(
+            profile, search_query=monster_search, selected_elements=monster_elements
+        )
+        if monsters_df.is_empty():
+            st.info("Ningún monstruo coincide con el filtro de nombre o elemento actual.")
+        else:
+            st.dataframe(
+                monsters_df,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "Avatar": st.column_config.ImageColumn("Avatar", width="small"),
+                    "HP Base": st.column_config.NumberColumn(
+                        "HP Base", help=STAT_TOOLTIPS_ES["HP"]
+                    ),
+                    "ATK Base": st.column_config.NumberColumn(
+                        "ATK Base", help=STAT_TOOLTIPS_ES["ATK"]
+                    ),
+                    "DEF Base": st.column_config.NumberColumn(
+                        "DEF Base", help=STAT_TOOLTIPS_ES["DEF"]
+                    ),
+                    "SPD Base": st.column_config.NumberColumn(
+                        "SPD Base", help=STAT_TOOLTIPS_ES["SPD"]
+                    ),
+                },
+            )
 
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Total Runes", len(df))
-    c2.metric(
-        "Mean Efficiency",
-        f"{df['Eficiencia (%)'].mean():.2f}%",
-        help=TOOLTIPS["barion_efficiency"],
-    )
-    c3.metric(
-        "Runes >= 100% Eff.",
-        int((df["Eficiencia (%)"] >= 100.0).sum()),
-        help=TOOLTIPS["barion_efficiency"],
-    )
-    c4.metric("Runes >= 25 SPD", int((df["SPD"] >= 25).sum()))
+    with sub_runes:
+        st.subheader(f"💎 Inventario de {tbl['runes']} (Fórmula de Eficiencia de Barion)")
+        df = _build_runes_dataframe(profile)
+        if df.is_empty():
+            st.warning("No se encontraron runas en el perfil actual.")
+        else:
+            c1, c2, c3, c4 = st.columns(4)
+            c1.metric("Total de Runas", len(df))
+            c2.metric(
+                "Eficiencia Promedio",
+                f"{df['Eficiencia (%)'].mean():.2f}%",
+                help=TOOLTIPS["barion_efficiency"],
+            )
+            c3.metric(
+                "Runas >= 100% Efic.",
+                int((df["Eficiencia (%)"] >= 100.0).sum()),
+                help=TOOLTIPS["barion_efficiency"],
+            )
+            c4.metric(
+                "Runas >= 25 SPD",
+                int((df["SPD"] >= 25).sum()),
+                help=STAT_TOOLTIPS_ES["SPD"],
+            )
 
-    f1, f2, f3 = st.columns(3)
-    all_sets = sorted(df["Set"].unique().to_list())
-    selected_sets = f1.multiselect("Filter by Set", options=all_sets, default=[])
-    selected_slots = f2.multiselect(
-        "Filter by Slot", options=[1, 2, 3, 4, 5, 6], default=[]
-    )
-    min_eff = f3.slider(
-        "Minimum Efficiency (%)",
-        0.0,
-        130.0,
-        0.0,
-        step=1.0,
-        help=TOOLTIPS["barion_efficiency"],
-    )
+            f1, f2, f3 = st.columns(3)
+            all_sets = sorted(df["Set"].unique().to_list())
+            selected_sets = f1.multiselect("Sets de Runas", options=all_sets, default=[])
+            selected_slots = f2.multiselect(
+                "Filtrar por Slot", options=[1, 2, 3, 4, 5, 6], default=[]
+            )
+            min_eff = f3.slider(
+                "Eficiencia Mínima (%)",
+                0.0,
+                130.0,
+                0.0,
+                step=1.0,
+                help=TOOLTIPS["barion_efficiency"],
+            )
 
-    filtered = df.filter(pl.col("Eficiencia (%)") >= min_eff)
-    if selected_sets:
-        filtered = filtered.filter(pl.col("Set").is_in(selected_sets))
-    if selected_slots:
-        filtered = filtered.filter(pl.col("Slot").is_in(selected_slots))
+            filtered = df.filter(pl.col("Eficiencia (%)") >= min_eff)
+            if selected_sets:
+                filtered = filtered.filter(pl.col("Set").is_in(selected_sets))
+            if selected_slots:
+                filtered = filtered.filter(pl.col("Slot").is_in(selected_slots))
 
-    st.dataframe(
-        filtered,
-        use_container_width=True,
-        hide_index=True,
-        column_config={
-            "Owner Icon": st.column_config.ImageColumn("Owner", width="small"),
-            "Eficiencia (%)": st.column_config.NumberColumn(
-                "Eficiencia (%)", help=TOOLTIPS["barion_efficiency"]
-            ),
-        },
-    )
+            st.dataframe(
+                filtered,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "Owner Icon": st.column_config.ImageColumn("Monstruo", width="small"),
+                    "SPD": st.column_config.NumberColumn(
+                        "SPD", help=STAT_TOOLTIPS_ES["SPD"]
+                    ),
+                    "CR / Tasa Crít.": st.column_config.NumberColumn(
+                        "CR / Tasa Crít.", help=STAT_TOOLTIPS_ES["CR"]
+                    ),
+                    "CD / Daño Crít.": st.column_config.NumberColumn(
+                        "CD / Daño Crít.", help=STAT_TOOLTIPS_ES["CD"]
+                    ),
+                    "HP%": st.column_config.NumberColumn(
+                        "HP%", help=STAT_TOOLTIPS_ES["HP"]
+                    ),
+                    "ATK%": st.column_config.NumberColumn(
+                        "ATK%", help=STAT_TOOLTIPS_ES["ATK"]
+                    ),
+                    "DEF%": st.column_config.NumberColumn(
+                        "DEF%", help=STAT_TOOLTIPS_ES["DEF"]
+                    ),
+                    "ACC%": st.column_config.NumberColumn(
+                        "ACC%", help=STAT_TOOLTIPS_ES["ACC"]
+                    ),
+                    "RES%": st.column_config.NumberColumn(
+                        "RES%", help=STAT_TOOLTIPS_ES["RES"]
+                    ),
+                    "Eficiencia (%)": st.column_config.NumberColumn(
+                        "Eficiencia (%)", help=TOOLTIPS["barion_efficiency"]
+                    ),
+                },
+            )
+
+    with sub_arts:
+        st.subheader(f"🏺 Inventario de {tbl['artifacts']}")
+        arts_df = _build_artifacts_dataframe(profile)
+        if arts_df.is_empty():
+            st.info("Esta cuenta no contiene artefactos registrados en el archivo JSON.")
+        else:
+            st.dataframe(arts_df, use_container_width=True, hide_index=True)
 
 
 def render_tab_optimizer(
@@ -457,21 +592,23 @@ def render_tab_optimizer(
     sky_totem: float,
     leader_spd: float,
 ) -> None:
+    opt_dict = ES_DICT["optimizer"]
+    tbl_dict = ES_DICT["tables"]
     st.subheader(
-        f"🧮 Branch & Bound Combinatorial Optimizer ({'RTA' if mode == 'rta' else 'PVE / Normal'})"
+        f"🧮 {opt_dict['panel_title']} ({'Modo RTA' if mode == 'rta' else 'Modo PVE / Normal'})"
     )
 
     col_left, col_right = st.columns([1, 2])
     with col_left:
-        st.markdown("**Filter & Select Monster**")
+        st.markdown(f"**{opt_dict['select_monster']}**")
         opt_search = st.text_input(
-            "🔍 Search Monster by Name",
+            f"🔍 {tbl_dict['search_monster']}",
             value="",
-            placeholder="Type monster name...",
+            placeholder=tbl_dict["search_monster"],
             key="opt_monster_search",
         )
         opt_elements = st.multiselect(
-            "Element Filter",
+            tbl_dict["element"],
             options=ALL_ELEMENTS,
             default=[],
             format_func=get_element_badge,
@@ -483,11 +620,11 @@ def render_tab_optimizer(
             elements=opt_elements,
         )
         if not filtered_monsters:
-            st.warning("No monsters match your search/element filter.")
+            st.warning("Ningún monstruo coincide con tu búsqueda o filtro de elemento.")
             return
 
         selected_monster = st.selectbox(
-            "Target Monster",
+            opt_dict["select_monster"],
             options=filtered_monsters,
             format_func=format_monster_label,
             key="opt_target_monster",
@@ -496,61 +633,112 @@ def render_tab_optimizer(
 
         set_names = [name for sid, name in sorted(SET_ID_MAP.items()) if sid != 25]
         req_set_names = st.multiselect(
-            "Required Sets (Broken Sets allowed on remaining slots)",
+            opt_dict["rune_sets"],
             options=set_names,
             default=[],
+            format_func=lambda s: RUNE_SET_LABELS_ES.get(s, s),
             help=f"{TOOLTIPS['broken_sets']} {TOOLTIPS['intangible_wildcard']}",
         )
         req_set_ids = [NAME_TO_SET_ID[n.lower()] for n in req_set_names]
 
+        st.markdown(f"**{opt_dict['main_stats_246']}**")
         stat_options = {f"{v} ({k})": k for k, v in STAT_ID_MAP.items()}
         s2_names = st.multiselect(
-            "Slot 2 Main Stat",
+            opt_dict["slot2_label"],
             options=list(stat_options.keys()),
             default=["SPD (8)", "ATK% (4)", "HP% (2)", "DEF% (6)"],
         )
         s4_names = st.multiselect(
-            "Slot 4 Main Stat",
+            opt_dict["slot4_label"],
             options=list(stat_options.keys()),
             default=["CDmg% (10)", "CRate% (9)", "HP% (2)", "ATK% (4)", "DEF% (6)"],
         )
         s6_names = st.multiselect(
-            "Slot 6 Main Stat",
+            opt_dict["slot6_label"],
             options=list(stat_options.keys()),
             default=["ATK% (4)", "HP% (2)", "DEF% (6)", "ACC% (12)"],
         )
 
-        st.markdown("**Minimum Constraints (Branch & Bound)**")
+        st.markdown(f"**{opt_dict['min_stats_filters']}**")
         r1, r2 = st.columns(2)
-        min_spd = r1.number_input("Min Combat SPD", min_value=0, max_value=400, value=130)
-        max_spd = r2.number_input("Max Combat SPD", min_value=1, max_value=999, value=450)
-        min_cr = r1.number_input("Min CRate (%)", min_value=0, max_value=100, value=15)
-        min_acc = r2.number_input("Min ACC (%)", min_value=0, max_value=100, value=0)
+        min_spd = r1.number_input(
+            "SPD Mín. (Velocidad)",
+            min_value=0,
+            max_value=400,
+            value=130,
+            help=STAT_TOOLTIPS_ES["SPD"],
+        )
+        max_spd = r2.number_input(
+            "SPD Máx. (Velocidad)",
+            min_value=1,
+            max_value=999,
+            value=450,
+            help=STAT_TOOLTIPS_ES["SPD"],
+        )
+        min_cr = r1.number_input(
+            "CR / Tasa Crít. Mín. (%)",
+            min_value=0,
+            max_value=100,
+            value=15,
+            help=STAT_TOOLTIPS_ES["CR"],
+        )
+        min_acc = r2.number_input(
+            "ACC Mín. (Precisión %)",
+            min_value=0,
+            max_value=100,
+            value=0,
+            help=STAT_TOOLTIPS_ES["ACC"],
+        )
         min_hp = r1.number_input(
-            "Min Total HP", min_value=0, max_value=100000, value=9000, step=500
+            "HP Mín. (Vida Total)",
+            min_value=0,
+            max_value=100000,
+            value=9000,
+            step=500,
+            help=STAT_TOOLTIPS_ES["HP"],
         )
         min_atk = r2.number_input(
-            "Min Total ATK", min_value=0, max_value=10000, value=500, step=100
+            "ATK Mín. (Ataque Total)",
+            min_value=0,
+            max_value=10000,
+            value=500,
+            step=100,
+            help=STAT_TOOLTIPS_ES["ATK"],
         )
 
+        goal_labels = {
+            "damage": "Daño Promedio (ATK + CR + CD)",
+            "ehp": "EHP (Vida Efectiva / Tanque)",
+            "spd": "SPD (Velocidad de Combate)",
+            "efficiency": "Eficiencia de Barion (%)",
+            "atk": "ATK (Ataque Total)",
+            "hp": "HP (Vida Total)",
+            "def": "DEF (Defensa Total)",
+        }
         opt_for = st.selectbox(
-            "Optimization Goal (Damage Multiplier / Effective HP / SPD)",
-            options=["damage", "ehp", "spd", "efficiency", "atk", "hp", "def"],
+            opt_dict["optimization_goal"],
+            options=list(goal_labels.keys()),
+            format_func=lambda k: goal_labels.get(k, k),
             index=0,
             help=f"{TOOLTIPS['damage_multiplier']} | {TOOLTIPS['effective_hp']}",
         )
         include_equipped = st.checkbox(
-            "Include Equipped Runes",
+            opt_dict["include_equipped"],
             value=True,
             help=TOOLTIPS["include_equipped_runes"],
         )
+        allow_broken = st.checkbox(
+            opt_dict["allow_broken_sets"],
+            value=True,
+            help=TOOLTIPS["broken_sets"],
+        )
         sim_15 = st.checkbox(
-            "Simulate +15 Runes (6★ Tables)",
+            opt_dict["simulate_plus15"],
             value=True,
             help=TOOLTIPS["simulate_plus15"],
         )
         max_per_slot = st.slider(
-            "Slot Depth (Focus Pruning)",
+            opt_dict["slot_depth"],
             8,
             35,
             18,
@@ -558,7 +746,7 @@ def render_tab_optimizer(
         )
 
         run_btn = st.button(
-            "🚀 Run Optimization (Numba JIT)",
+            f"🚀 {opt_dict['calculate_builds']}",
             type="primary",
             use_container_width=True,
         )
@@ -577,6 +765,7 @@ def render_tab_optimizer(
                 min_hp=int(min_hp),
                 min_atk=int(min_atk),
                 simulate_plus15=sim_15,
+                allow_broken_sets=allow_broken,
                 sky_totem=sky_totem,
                 leader_skill_spd=leader_spd,
                 optimize_for=opt_for,  # type: ignore[arg-type]
@@ -606,16 +795,18 @@ def render_tab_optimizer(
             render_monster_card(
                 target_mon,
                 subtitle=(
-                    f"Evaluated: {opt_res.evaluated_builds:,} builds | "
-                    f"Pruned (2,4,6): {opt_res.pruned_triplets_246:,}/{opt_res.total_triplets_246:,} | "
-                    f"Elapsed: {opt_res.elapsed_ms:.2f} ms"
+                    f"{opt_dict['results_found']}: {len(opt_res.builds)} | "
+                    f"Builds evaluadas: {opt_res.evaluated_builds:,} | "
+                    f"Podadas (2,4,6): {opt_res.pruned_triplets_246:,}/{opt_res.total_triplets_246:,} | "
+                    f"Tiempo: {opt_res.elapsed_ms:.2f} ms"
                 ),
             )
             if not opt_res.builds:
-                st.warning(
-                    "No rune combination satisfied all constraints. Lower minimum thresholds or enable 'Include Equipped Runes'."
-                )
+                st.warning(opt_dict["no_results_warning"])
             else:
+                st.markdown(
+                    f"#### ✅ {opt_dict['results_found']}: `{len(opt_res.builds)}` builds óptimas"
+                )
                 build_rows = []
                 for b in opt_res.builds:
                     s = b.stats
@@ -623,23 +814,27 @@ def render_tab_optimizer(
                         {
                             "Rank": b.rank,
                             "Avatar": target_mon.icon_url,
-                            "Monster": target_mon.name,
-                            "Element": get_element_badge(target_mon.element),
+                            "Monstruo": target_mon.name,
+                            "Elemento": get_element_badge(target_mon.element),
                             "Score": b.score,
-                            "Sets": ", ".join(s.active_sets) if s.active_sets else "Broken Set",
+                            "Sets de Runas": (
+                                ", ".join(s.active_sets)
+                                if s.active_sets
+                                else "Set Roto (Broken)"
+                            ),
                             "Intangible ->": s.intangible_replaced_set or "-",
-                            "Combat SPD": s.combat_spd,
-                            "Rune SPD": f"+{s.rune_spd}",
+                            "SPD": s.combat_spd,
+                            "SPD Runas": f"+{s.rune_spd}",
                             "HP": s.total_hp,
                             "ATK": s.total_atk,
                             "DEF": s.total_def,
-                            "CR%": s.crate,
-                            "CD%": s.cdmg,
-                            "ACC%": s.acc,
-                            "RES%": s.res,
+                            "CR / Tasa Crít.": s.crate,
+                            "CD / Daño Crít.": s.cdmg,
+                            "ACC": s.acc,
+                            "RES": s.res,
                             "EHP": s.ehp,
-                            "Mean Eff. (%)": s.avg_efficiency,
-                            "Runes (Slots 1-6)": str(b.rune_ids),
+                            "Eficiencia (%)": s.avg_efficiency,
+                            "Runas (Slots 1-6)": str(b.rune_ids),
                         }
                     )
                 st.dataframe(
@@ -651,21 +846,45 @@ def render_tab_optimizer(
                         "Score": st.column_config.NumberColumn(
                             "Score", help=TOOLTIPS["damage_multiplier"]
                         ),
-                        "EHP": st.column_config.NumberColumn(
-                            "EHP", help=TOOLTIPS["effective_hp"]
+                        "SPD": st.column_config.NumberColumn(
+                            "SPD", help=STAT_TOOLTIPS_ES["SPD"]
                         ),
-                        "Sets": st.column_config.TextColumn(
-                            "Sets", help=TOOLTIPS["broken_sets"]
+                        "HP": st.column_config.NumberColumn(
+                            "HP", help=STAT_TOOLTIPS_ES["HP"]
+                        ),
+                        "ATK": st.column_config.NumberColumn(
+                            "ATK", help=STAT_TOOLTIPS_ES["ATK"]
+                        ),
+                        "DEF": st.column_config.NumberColumn(
+                            "DEF", help=STAT_TOOLTIPS_ES["DEF"]
+                        ),
+                        "CR / Tasa Crít.": st.column_config.NumberColumn(
+                            "CR / Tasa Crít.", help=STAT_TOOLTIPS_ES["CR"]
+                        ),
+                        "CD / Daño Crít.": st.column_config.NumberColumn(
+                            "CD / Daño Crít.", help=STAT_TOOLTIPS_ES["CD"]
+                        ),
+                        "ACC": st.column_config.NumberColumn(
+                            "ACC", help=STAT_TOOLTIPS_ES["ACC"]
+                        ),
+                        "RES": st.column_config.NumberColumn(
+                            "RES", help=STAT_TOOLTIPS_ES["RES"]
+                        ),
+                        "EHP": st.column_config.NumberColumn(
+                            "EHP", help=STAT_TOOLTIPS_ES["EHP"]
+                        ),
+                        "Sets de Runas": st.column_config.TextColumn(
+                            "Sets de Runas", help=TOOLTIPS["broken_sets"]
                         ),
                     },
                 )
 
                 chosen_rank = st.selectbox(
-                    "Select Build Rank to Lock Runes",
+                    "Seleccionar Rank de Build para Bloquear Runas",
                     options=[b.rank for b in opt_res.builds],
                     index=0,
                 )
-                if st.button(f"🔒 Lock Build #{chosen_rank} in {mode.upper()} Mode"):
+                if st.button(f"🔒 Bloquear Build #{chosen_rank} en Modo {mode.upper()}"):
                     chosen_build: OptimizedBuild = opt_res.builds[chosen_rank - 1]
                     target_set = (
                         profile.locked_runes_rta
@@ -681,7 +900,7 @@ def render_tab_optimizer(
                         target_set.add(rid)
                     target_dict[opt_res.unit_id] = chosen_build
                     st.success(
-                        f"Locked runes {chosen_build.rune_ids} for {target_mon.name} ({get_element_badge(target_mon.element)}) in {mode.upper()} mode."
+                        f"Runas bloqueadas {chosen_build.rune_ids} para {target_mon.name} ({get_element_badge(target_mon.element)}) en modo {mode.upper()}."
                     )
 
 
@@ -691,20 +910,21 @@ def render_tab_speed_tuning(
     sky_totem: float,
     leader_spd: float,
 ) -> None:
+    tbl_dict = ES_DICT["tables"]
     tick_val = RTA_TICK_SIZE if mode == "rta" else PVE_TICK_SIZE
     st.subheader(
-        f"⏱️ Team Builder & Speed Tuning ({mode.upper()} Mode — Tick = {tick_val})"
+        f"⏱️ Constructor de Equipos y Speed Tuning (Modo {mode.upper()} — Tick = {tick_val})"
     )
 
     f_col1, f_col2 = st.columns([2, 2])
     st_search = f_col1.text_input(
-        "🔍 Filter Available Monsters by Name",
+        f"🔍 {tbl_dict['search_monster']}",
         value="",
-        placeholder="Search monster name...",
+        placeholder=tbl_dict["search_monster"],
         key="st_monster_search",
     )
     st_elements = f_col2.multiselect(
-        "Filter by Element",
+        tbl_dict["element"],
         options=ALL_ELEMENTS,
         default=[],
         format_func=get_element_badge,
@@ -729,7 +949,7 @@ def render_tab_speed_tuning(
         default_team = selectable_monsters[:3]
 
     selected_team = st.multiselect(
-        "Select Team Monsters (in desired turn order 1 ➔ N)",
+        "Seleccionar Monstruos del Equipo (en orden de turno deseado 1 ➔ N)",
         options=selectable_monsters,
         default=default_team[:3],
         format_func=format_monster_label,
@@ -737,7 +957,7 @@ def render_tab_speed_tuning(
     )
 
     if not selected_team:
-        st.info("Select at least 2 monsters to simulate and optimize Speed Tuning.")
+        st.info("Selecciona al menos 2 monstruos para simular y optimizar el Speed Tuning.")
         return
 
     sim_members: list[SpeedTuneMember] = []
@@ -750,21 +970,22 @@ def render_tab_speed_tuning(
             mon, equipped, sky_totem=sky_totem, leader_skill_spd=leader_spd
         )
         with cols[idx]:
-            render_monster_card(mon, subtitle=f"Turn Slot #{idx + 1}")
+            render_monster_card(mon, subtitle=f"Turno #{idx + 1}")
             r_spd = st.number_input(
-                f"Rune SPD (#{idx + 1})",
+                f"SPD de Runas (#{idx + 1})",
                 min_value=0,
                 max_value=260,
                 value=curr_stats.rune_spd if curr_stats.rune_spd > 0 else 120 - idx * 15,
                 key=f"st_rspd_{idx}_{mon.unit_id}",
+                help=STAT_TOOLTIPS_ES["SPD"],
             )
             swift_on = st.checkbox(
-                "Swift Set Active",
+                "Set Swift Activo",
                 value=("Swift" in curr_stats.active_sets or idx == 0),
                 key=f"st_swift_{idx}_{mon.unit_id}",
             )
             atb_boost = st.number_input(
-                "Ally ATB Boost (%)",
+                "Boost de Barra Aliada (ATB %)",
                 min_value=0.0,
                 max_value=100.0,
                 value=30.0 if idx == 0 and "Bernard" in mon.name else 0.0,
@@ -772,12 +993,12 @@ def render_tab_speed_tuning(
                 key=f"st_boost_{idx}_{mon.unit_id}",
             )
             spd_buff = st.checkbox(
-                "Applies SPD Buff (+30%)",
+                "Aplica Buff de SPD (+30%)",
                 value=(idx == 0 and "Bernard" in mon.name),
                 key=f"st_spdbuff_{idx}_{mon.unit_id}",
             )
             role_goal = st.selectbox(
-                "Optimizer Goal",
+                "Objetivo del Rol",
                 options=["spd", "damage", "ehp", "efficiency"],
                 index=0 if idx < len(selected_team) - 1 else 1,
                 key=f"st_goal_{idx}_{mon.unit_id}",
@@ -817,13 +1038,13 @@ def render_tab_speed_tuning(
 
     if report.is_perfectly_tuned:
         st.success(
-            f"✅ Valid Speed Tuning ({mode.upper()} tick={report.tick_size}): "
-            f"Turn sequence: {' ➔ '.join(report.turn_sequence)}"
+            f"✅ Speed Tuning Perfecto ({mode.upper()} tick={report.tick_size}): "
+            f"Secuencia de turnos: {' ➔ '.join(report.turn_sequence)}"
         )
     else:
         st.error(
-            f"⚠️ Speed Tuning Mismatch ({mode.upper()} tick={report.tick_size}): "
-            f"Actual sequence: {' ➔ '.join(report.turn_sequence)}"
+            f"⚠️ Desfase en Speed Tuning ({mode.upper()} tick={report.tick_size}): "
+            f"Secuencia actual: {' ➔ '.join(report.turn_sequence)}"
         )
 
     tune_rows = []
@@ -831,16 +1052,16 @@ def render_tab_speed_tuning(
         mon_obj = profile.monsters.get(m.unit_id)
         tune_rows.append(
             {
-                "Expected Turn": m.expected_turn_order,
+                "Turno Esperado": m.expected_turn_order,
                 "Avatar": mon_obj.icon_url if mon_obj else "",
-                "Monster": m.name,
-                "Element": get_element_badge(mon_obj.element) if mon_obj else "❓ Unknown",
-                "Current Combat SPD": m.combat_spd,
-                "1st Turn Tick": m.first_turn_tick,
-                "Actual Turn": m.actual_turn_order,
-                "Min Combat SPD Req.": m.min_combat_spd_required,
-                "Min Rune SPD Req.": f"+{m.min_rune_spd_required}",
-                "Status": "✅ Tuned" if m.is_tuned else "❌ Cut / Out of Order",
+                "Monstruo": m.name,
+                "Elemento": get_element_badge(mon_obj.element) if mon_obj else "❓ Desconocido",
+                "SPD Combate Actual": m.combat_spd,
+                "Tick 1er Turno": m.first_turn_tick,
+                "Turno Real": m.actual_turn_order,
+                "SPD Combate Mín. Req.": m.min_combat_spd_required,
+                "SPD Runas Mín. Req.": f"+{m.min_rune_spd_required}",
+                "Estado": "✅ Sincronizado" if m.is_tuned else "❌ Cortado / Fuera de Orden",
             }
         )
     st.dataframe(
@@ -853,7 +1074,7 @@ def render_tab_speed_tuning(
     )
 
     if st.button(
-        f"⚡ Optimize & Lock Full Team in Turn Order ({mode.upper()})",
+        f"⚡ Calcular Builds y Bloquear Equipo Completo en Orden ({mode.upper()})",
         type="primary",
     ):
         team_results = optimize_team_speed_tuning(
@@ -873,7 +1094,7 @@ def render_tab_speed_tuning(
                 target_dict[res.unit_id] = res.builds[0]
 
     if st.session_state.last_team_opt_results:
-        st.markdown("#### Sequential Team Optimization Results")
+        st.markdown("#### Resultados encontrados (Optimización Secuencial de Equipo)")
         summary_rows = []
         for idx, res in enumerate(st.session_state.last_team_opt_results):
             if res.builds:
@@ -882,19 +1103,19 @@ def render_tab_speed_tuning(
                 mon_obj = profile.monsters.get(res.unit_id)
                 summary_rows.append(
                     {
-                        "Turn #": idx + 1,
+                        "Turno #": idx + 1,
                         "Avatar": mon_obj.icon_url if mon_obj else "",
-                        "Monster": res.monster_name,
-                        "Element": get_element_badge(mon_obj.element) if mon_obj else "❓ Unknown",
-                        "Active Sets": ", ".join(s.active_sets) if s.active_sets else "Broken Set",
-                        "Combat SPD": s.combat_spd,
-                        "Rune SPD": f"+{s.rune_spd}",
-                        "Total HP": s.total_hp,
-                        "Total ATK": s.total_atk,
-                        "CRate%": s.crate,
-                        "CDmg%": s.cdmg,
-                        "ACC%": s.acc,
-                        "Assigned Runes": str(b.rune_ids),
+                        "Monstruo": res.monster_name,
+                        "Elemento": get_element_badge(mon_obj.element) if mon_obj else "❓ Desconocido",
+                        "Sets de Runas": ", ".join(s.active_sets) if s.active_sets else "Set Roto (Broken)",
+                        "SPD": s.combat_spd,
+                        "SPD Runas": f"+{s.rune_spd}",
+                        "HP": s.total_hp,
+                        "ATK": s.total_atk,
+                        "CR / Tasa Crít.": s.crate,
+                        "CD / Daño Crít.": s.cdmg,
+                        "ACC": s.acc,
+                        "Runas Asignadas": str(b.rune_ids),
                     }
                 )
         if summary_rows:
@@ -909,14 +1130,14 @@ def render_tab_speed_tuning(
 
 
 def render_tab_locked_builds(profile: AccountProfile) -> None:
-    st.subheader("🔒 Locked Runes & Builds Manager (Independent PVE vs RTA)")
+    st.subheader("🔒 Gestor de Runas y Builds Bloqueadas (PVE vs RTA Independientes)")
 
     col_pve, col_rta = st.columns(2)
     with col_pve:
         st.markdown(
-            f"### Normal Mode (PVE / Siege) — `{len(profile.locked_runes_pve)}` locked runes"
+            f"### Modo Normal (PVE / Siege) — `{len(profile.locked_runes_pve)}` runas bloqueadas"
         )
-        if st.button("🔓 Unlock All PVE Runes"):
+        if st.button("🔓 Desbloquear Todas las Runas PVE"):
             profile.locked_runes_pve.clear()
             st.session_state.locked_builds_pve.clear()
             st.rerun()
@@ -928,21 +1149,21 @@ def render_tab_locked_builds(profile: AccountProfile) -> None:
                     render_monster_card(
                         mon,
                         subtitle=(
-                            f"Sets: {', '.join(b.stats.active_sets) or 'Broken Set'} | "
-                            f"Combat SPD: {b.stats.combat_spd} | "
-                            f"Runes: {b.rune_ids}"
+                            f"Sets: {', '.join(b.stats.active_sets) or 'Set Roto (Broken)'} | "
+                            f"SPD Combate: {b.stats.combat_spd} | "
+                            f"Runas: {b.rune_ids}"
                         ),
                     )
         elif profile.locked_runes_pve:
-            st.write("Locked Rune IDs:", sorted(profile.locked_runes_pve))
+            st.write("IDs de Runas Bloqueadas (PVE):", sorted(profile.locked_runes_pve))
         else:
-            st.caption("No runes or builds currently locked in PVE mode.")
+            st.caption("No hay runas ni builds bloqueadas actualmente en modo PVE.")
 
     with col_rta:
         st.markdown(
-            f"### RTA Mode (World Arena) — `{len(profile.locked_runes_rta)}` locked runes"
+            f"### Modo RTA (World Arena) — `{len(profile.locked_runes_rta)}` runas bloqueadas"
         )
-        if st.button("🔓 Unlock All RTA Runes"):
+        if st.button("🔓 Desbloquear Todas las Runas RTA"):
             profile.locked_runes_rta.clear()
             st.session_state.locked_builds_rta.clear()
             st.rerun()
@@ -954,20 +1175,20 @@ def render_tab_locked_builds(profile: AccountProfile) -> None:
                     render_monster_card(
                         mon,
                         subtitle=(
-                            f"Sets: {', '.join(b.stats.active_sets) or 'Broken Set'} | "
-                            f"Combat SPD: {b.stats.combat_spd} | "
-                            f"Runes: {b.rune_ids}"
+                            f"Sets: {', '.join(b.stats.active_sets) or 'Set Roto (Broken)'} | "
+                            f"SPD Combate: {b.stats.combat_spd} | "
+                            f"Runas: {b.rune_ids}"
                         ),
                     )
         elif profile.locked_runes_rta:
-            st.write("Locked Rune IDs:", sorted(profile.locked_runes_rta))
+            st.write("IDs de Runas Bloqueadas (RTA):", sorted(profile.locked_runes_rta))
         else:
-            st.caption("No runes or builds currently locked in RTA mode.")
+            st.caption("No hay runas ni builds bloqueadas actualmente en modo RTA.")
 
 
 def main() -> None:
     st.set_page_config(
-        page_title="SW-OptiPy | Summoners War Optimizer",
+        page_title=ES_DICT["app"]["page_title"],
         page_icon="⚡",
         layout="wide",
     )
@@ -984,10 +1205,10 @@ def main() -> None:
 
     tab1, tab2, tab3, tab4 = st.tabs(
         [
-            "📊 Monster Box & Rune Dashboard",
-            "🧮 General / PVE Optimizer",
-            "⏱️ RTA Builder & Speed Tuning",
-            "🔒 Locked Builds Manager",
+            "📊 Monstruos, Runas y Artefactos",
+            "🧮 Optimizador de Builds",
+            "⏱️ Speed Tuning (PVE / RTA)",
+            "🔒 Builds Bloqueadas",
         ]
     )
 

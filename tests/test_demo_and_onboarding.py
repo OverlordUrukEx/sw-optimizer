@@ -77,14 +77,30 @@ def test_load_demo_account_profile_and_optimize() -> None:
 
 
 def test_help_guide_modal_and_tooltips_content() -> None:
-    """Verifies HelpGuideModal 3-step content and technical UI tooltips."""
+    """Verifies HelpGuideModal 3-step Spanish content, i18n dictionary, and technical UI tooltips."""
+    from src.i18n import ES_DICT, STAT_TOOLTIPS_ES
+
     assert "Summoners War Exporter" in HelpGuideModal.STEP_1_SWEX_MD
     assert "HubUserLogin" in HelpGuideModal.STEP_1_SWEX_MD
+    assert "Cargar JSON" in HelpGuideModal.STEP_1_SWEX_MD
     assert "con" in HelpGuideModal.STEP_2_STATS_MD.lower()
     assert "grind" in HelpGuideModal.STEP_2_STATS_MD.lower()
     assert "Ancient" in HelpGuideModal.STEP_2_STATS_MD
+    assert "Runa Antigua" in HelpGuideModal.STEP_2_STATS_MD
     assert "Intangible" in HelpGuideModal.STEP_3_OPTIMIZER_MD
-    assert "Broken Sets" in HelpGuideModal.STEP_3_OPTIMIZER_MD
+    assert "Broken" in HelpGuideModal.STEP_3_OPTIMIZER_MD
+    assert "Calcular Builds" in HelpGuideModal.STEP_3_OPTIMIZER_MD
+
+    assert ES_DICT["navbar"]["upload_json"] == "Cargar JSON"
+    assert ES_DICT["navbar"]["try_demo"] == "Probar Cuenta Demo"
+    assert ES_DICT["navbar"]["switch_or_clear"] == "Cambiar Cuenta / Limpiar"
+    assert ES_DICT["navbar"]["help_guide"] == "Guía de Uso"
+    assert ES_DICT["optimizer"]["panel_title"] == "Optimizador de Builds"
+    assert ES_DICT["optimizer"]["calculate_builds"] == "Calcular Builds"
+    assert ES_DICT["optimizer"]["results_found"] == "Resultados encontrados"
+
+    for stat_key in ("HP", "ATK", "DEF", "SPD", "CR", "CD", "RES", "ACC", "EHP"):
+        assert stat_key in STAT_TOOLTIPS_ES
 
     for required_tooltip in (
         "effective_hp",

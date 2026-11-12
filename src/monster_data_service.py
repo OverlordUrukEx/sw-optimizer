@@ -29,13 +29,18 @@ COM2US_ELEMENT_MAP: dict[int, str] = {
 }
 
 ELEMENT_BADGE_MAP: dict[str, str] = {
-    "Water": "💧 Water",
-    "Fire": "🔥 Fire",
-    "Wind": "🌪️ Wind",
-    "Light": "✨ Light",
-    "Dark": "🌑 Dark",
-    "Pure": "🌀 Pure",
-    "Unknown": "❓ Unknown",
+    "Water": "💧 Agua",
+    "Fire": "🔥 Fuego",
+    "Wind": "🌪️ Viento",
+    "Light": "✨ Luz",
+    "Dark": "🌑 Oscuridad",
+    "Pure": "🌀 Puro",
+    "Unknown": "❓ Desconocido",
+    "Agua": "💧 Agua",
+    "Fuego": "🔥 Fuego",
+    "Viento": "🌪️ Viento",
+    "Luz": "✨ Luz",
+    "Oscuridad": "🌑 Oscuridad",
 }
 
 # Fallback SVG data URI when a monster has no image_filename (e.g. unknown new monster ID)

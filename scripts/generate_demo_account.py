@@ -23,6 +23,8 @@ DEFAULT_DEMO_OUTPUT = PROJECT_ROOT / "src" / "data" / "demo_account.json"
 DEMO_WIZARD_ID = 10000001
 DEMO_WIZARD_NAME = "Demo_Summoner"
 DEMO_WIZARD_LEVEL = 100
+DEMO_WIZARD_MANA = 25000000
+DEMO_WIZARD_CRYSTAL = 1500
 
 # Priority unit_master_id list:
 # Includes required 19811 (Lapis), 22911 (Abigail), 11031 (Icaru 2A), 11532 (Spectra 2A),
@@ -203,6 +205,8 @@ def build_demo_account_payload(
             "wizard_id": DEMO_WIZARD_ID,
             "wizard_name": DEMO_WIZARD_NAME,
             "wizard_level": DEMO_WIZARD_LEVEL,
+            "wizard_mana": DEMO_WIZARD_MANA,
+            "wizard_crystal": DEMO_WIZARD_CRYSTAL,
         },
         "unit_list": selected_units,
         "runes": selected_runes[:target_unequipped_runes],

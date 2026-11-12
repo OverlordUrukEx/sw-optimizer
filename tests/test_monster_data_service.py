@@ -107,14 +107,19 @@ def test_ui_monster_search_and_element_filter() -> None:
     assert len(search_lushen) == 1
     assert search_lushen[0].name == "Lushen"
     assert "Lushen" in format_monster_label(search_lushen[0])
-    assert "🌪️ Wind" in format_monster_label(search_lushen[0])
+    assert "🌪️ Viento" in format_monster_label(search_lushen[0])
+
+    wind_es = filter_monsters(profile.monsters.values(), elements=["Viento"])
+    assert len(wind_es) == len(wind_monsters)
 
     df = build_monsters_dataframe(
-        profile, search_query="o", selected_elements=["Water", "Wind"]
+        profile, search_query="o", selected_elements=["Agua", "Viento"]
     )
     assert not df.is_empty()
     assert "Avatar" in df.columns
-    assert "Element" in df.columns
+    assert "Monstruo" in df.columns
+    assert "Elemento" in df.columns
+    assert "Estrellas" in df.columns
 
 
 def test_ground_truth_jmrc_ex_swex_parsing() -> None:

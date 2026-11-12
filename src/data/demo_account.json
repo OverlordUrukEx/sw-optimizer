@@ -2,7 +2,9 @@
   "wizard_info": {
     "wizard_id": 10000001,
     "wizard_name": "Demo_Summoner",
-    "wizard_level": 100
+    "wizard_level": 100,
+    "wizard_mana": 25000000,
+    "wizard_crystal": 1500
   },
   "unit_list": [
     {

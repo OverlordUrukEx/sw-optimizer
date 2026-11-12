@@ -167,6 +167,9 @@ def parse_swex_json(
         wizard_info = {}
     wizard_id = int(wizard_info.get("wizard_id", data.get("wizard_id", 0)) or 0)
     wizard_name = str(wizard_info.get("wizard_name", "Summoner") or "Summoner")
+    wizard_level = int(wizard_info.get("wizard_level", data.get("wizard_level", 50)) or 50)
+    wizard_mana = int(wizard_info.get("wizard_mana", data.get("wizard_mana", 0)) or 0)
+    wizard_crystal = int(wizard_info.get("wizard_crystal", data.get("wizard_crystal", 0)) or 0)
 
     runes_by_id: dict[int, Rune] = {}
     artifacts_by_id: dict[int, Artifact] = {}
@@ -306,6 +309,9 @@ def parse_swex_json(
     return AccountProfile(
         wizard_id=wizard_id,
         wizard_name=wizard_name,
+        wizard_level=wizard_level,
+        wizard_mana=wizard_mana,
+        wizard_crystal=wizard_crystal,
         monsters=monsters_by_id,
         runes=runes_by_id,
         artifacts=artifacts_by_id,

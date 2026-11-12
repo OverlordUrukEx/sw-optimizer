@@ -66,6 +66,7 @@ class OptimizationConstraints(BaseModel):
     min_ehp: float = 0.0
 
     simulate_plus15: bool = True
+    allow_broken_sets: bool = True
     sky_totem: float = 0.15
     leader_skill_spd: float = 0.0
 
@@ -213,6 +214,7 @@ def _check_sets_and_bonuses_numba(
     s6: int,
     req_set_ids: np.ndarray,
     req_set_counts: np.ndarray,
+    allow_broken: bool = True,
 ) -> tuple[bool, float, float, float, int, int, int, int, bool]:
     """
     Evalúa en código nativo compilado con Numba:
@@ -298,6 +300,13 @@ def _check_sets_and_bonuses_numba(
         if completed[rsid] < req_set_counts[idx]:
             return False, 0.0, 0.0, 0.0, 0, 0, 0, 0, False
 
+    if not allow_broken:
+        covered_pieces = 0
+        for sid in range(1, 25):
+            covered_pieces += completed[sid] * set_sizes[sid]
+        if covered_pieces < 6:
+            return False, 0.0, 0.0, 0.0, 0, 0, 0, 0, False
+
     # Calcular bonificaciones de sets activos
     hp_pct = completed[1] * 15.0 + completed[21] * 8.0
     def_pct = completed[2] * 15.0 + completed[20] * 8.0
@@ -346,6 +355,7 @@ def _branch_and_bound_kernel(
     min_ehp: float,
     opt_mode: int,
     top_k: int,
+    allow_broken: bool = True,
 ) -> tuple[np.ndarray, np.ndarray, int, int, int]:
     """
     Núcleo JIT (Numba) con evaluación prioritaria de slots (2, 4, 6) y poda temprana (Branch & Bound).
@@ -503,7 +513,7 @@ def _branch_and_bound_kernel(
                                 set_acc,
                                 swift_active,
                             ) = _check_sets_and_bonuses_numba(
-                                s1, s2, s3, s4, s5, s6, req_set_ids, req_set_counts
+                                s1, s2, s3, s4, s5, s6, req_set_ids, req_set_counts, allow_broken
                             )
                             if not ok_sets:
                                 continue
@@ -725,6 +735,7 @@ def optimize_monster_builds(
         cfg.min_ehp,
         opt_mode_int,
         top_k,
+        cfg.allow_broken_sets,
     )
 
     builds: list[OptimizedBuild] = []

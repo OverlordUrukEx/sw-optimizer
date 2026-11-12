@@ -16,6 +16,9 @@ def test_app_runes_dataframe_builder(tmp_path: Path) -> None:
     df = _build_runes_dataframe(profile)
     assert len(df) == 144
     assert "Eficiencia (%)" in df.columns
+    assert "Equipada en" in df.columns
     assert "Equipada PVE" in df.columns
     assert "Equipada RTA" in df.columns
+    assert "Estrellas" in df.columns
+    assert "Inventario (Libre)" in df["Equipada en"].to_list()
 
