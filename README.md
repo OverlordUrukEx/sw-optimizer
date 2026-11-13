@@ -74,4 +74,4 @@ uv run pytest -v
 ## 🔒 Privacidad y Seguridad
 
 - **Procesamiento 100% Local:** Tu archivo `.json` de SWEX se analiza exclusivamente en la memoria local de tu sesión; tus runas, monstruos e identificadores de cuenta nunca se envían a servidores externos.
-- **Protección en Git (`.gitignore`):** Las exportaciones personales de cuentas de SWEX (`JmRc_EX-*.json`) y cachés locales están excluidas en [`.gitignore`](file:///home/johan/VM_Personal/sw_optimizer/.gitignore) para evitar subir datos sensibles de cuentas reales al repositorio público, manteniendo únicamente el archivo anonimizado [`src/data/demo_account.json`](file:///home/johan/VM_Personal/sw_optimizer/src/data/demo_account.json).
+- **Protección en Git (`.gitignore`):** Las exportaciones personales de cuentas de SWEX (`/*.json` / `Invocador-12345678.json`) y cachés locales están excluidas en [`.gitignore`](file:///home/johan/VM_Personal/sw_optimizer/.gitignore) para evitar subir datos sensibles de cuentas reales al repositorio público, manteniendo únicamente el archivo anonimizado [`src/data/demo_account.json`](file:///home/johan/VM_Personal/sw_optimizer/src/data/demo_account.json).

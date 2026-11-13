@@ -122,11 +122,10 @@ def test_ui_monster_search_and_element_filter() -> None:
     assert "Estrellas" in df.columns
 
 
-def test_ground_truth_jmrc_ex_swex_parsing() -> None:
-    """Verifies parsing against the real JmRc_EX-59255826.json ground-truth schema."""
-    gt_path = Path("JmRc_EX-59255826.json")
-    if not gt_path.exists():
-        return
+def test_sanitized_demo_swex_schema_parsing() -> None:
+    """Verifies parsing against the sanitized SWEX schema (`src/data/demo_account.json`)."""
+    demo_path = Path("src/data/demo_account.json")
+    assert demo_path.exists()
 
     service = MonsterDataService.get_instance()
     lapis_meta = service.get_monster_metadata(19811)
@@ -134,20 +133,16 @@ def test_ground_truth_jmrc_ex_swex_parsing() -> None:
     assert lapis_meta.element == "Water"
     assert lapis_meta.image_filename == "unit_icon_0036_0_4.png"
 
-    profile = parse_swex_json(gt_path, bestiary=service, fetch_remote_bestiary=False)
-    assert profile.wizard_name == "JmRc_EX"
-    assert len(profile.monsters) == 266
-    assert len(profile.runes) == 1243
-    assert len(profile.artifacts) == 1130
+    profile = parse_swex_json(demo_path, bestiary=service, fetch_remote_bestiary=False)
+    assert profile.wizard_id == 10000001
+    assert profile.wizard_name == "Demo_Summoner"
+    assert len(profile.monsters) == 8
+    assert len(profile.runes) >= 70
 
-    # First unit in JmRc_EX-59255826.json is Lapis (unit_id=26762719222, unit_master_id=19811)
-    lapis_unit = profile.monsters[26762719222]
+    lapis_units = [m for m in profile.monsters.values() if m.unit_master_id == 19811]
+    assert len(lapis_units) == 1
+    lapis_unit = lapis_units[0]
     assert lapis_unit.name == "Lapis"
     assert lapis_unit.element == "Water"
     assert lapis_unit.base_hp == 659 * 15
-
-    # Verify artifact pri_effect ([101, 100, ...]) parsed flat_atk = 100
-    lapis_art = profile.artifacts[794655369]
-    assert lapis_art.flat_atk == 100
-    assert len(lapis_art.sec_eff) == 4
 

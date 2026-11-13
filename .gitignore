@@ -14,9 +14,7 @@ wheels/
 .cache/
 data/*.sqlite
 data/*.sqlite-journal
-JmRc_EX-*.json
-JmRc_EX*
-*-59255826.json
+/*.json
 
 # Ensure static bestiary map and sanitized demo account are tracked
 !src/data/monster_map.json
