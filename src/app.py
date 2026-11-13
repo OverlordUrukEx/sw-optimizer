@@ -45,6 +45,7 @@ from src.optimizer import (
     optimize_team_speed_tuning,
 )
 from src.parser import parse_swex_json
+from src.services.storage import AccountStorageService
 from src.ui_components import (
     TOOLTIPS,
     activate_account_profile,
@@ -52,6 +53,7 @@ from src.ui_components import (
     render_empty_state_hero,
     render_top_navbar,
 )
+from src.workers import OptimizerProgressUpdate, OptimizerWorker
 
 ALL_ELEMENTS: list[str] = ["Water", "Fire", "Wind", "Light", "Dark"]
 
@@ -164,50 +166,44 @@ def render_monster_card(monster: Monster, subtitle: str = "") -> None:
 
 
 def inject_browser_monster_cache(service: MonsterDataService) -> None:
-    """Synchronizes monster_map metadata Version & Timestamp into browser localStorage."""
-    version = service.version
-    updated_at = int(service.updated_at or 0)
-    total = service.size
-    components.html(
-        f"""
-        <script>
-        (function() {{
-            try {{
-                const META_KEY = "sw_optimizer_monster_map_meta_v{version}";
-                const existingRaw = window.localStorage.getItem(META_KEY);
-                const nowSec = Math.floor(Date.now() / 1000);
-                let needsUpdate = true;
-                if (existingRaw) {{
-                    const parsed = JSON.parse(existingRaw);
-                    if (parsed && parsed.version === {version} && (nowSec - parsed.updated_at) < {service.ttl_seconds}) {{
-                        needsUpdate = false;
-                    }}
-                }}
-                if (needsUpdate) {{
-                    window.localStorage.setItem(META_KEY, JSON.stringify({{
-                        version: {version},
-                        updated_at: {updated_at} || nowSec,
-                        count: {total}
-                    }}));
-                }}
-            }} catch (err) {{
-                console.warn("Browser storage monster cache check skipped:", err);
-            }}
-        }})();
-        </script>
-        """,
-        height=0,
-        width=0,
+    """Synchronizes monster_map metadata and active account inventory into asynchronous browser IndexedDB (`SWOptimizerDB`)."""
+    profile: AccountProfile | None = st.session_state.get("profile")
+    is_demo = bool(st.session_state.get("is_demo_mode", False))
+    file_sig = str(st.session_state.get("loaded_file_sig") or "")
+    clear_pending = bool(st.session_state.get("indexeddb_clear_pending", False))
+    bridge_html = AccountStorageService.build_indexeddb_bridge_html(
+        monster_service=service,
+        profile=profile,
+        is_demo_mode=is_demo,
+        file_signature=file_sig,
+        clear_account_store=clear_pending,
     )
+    if clear_pending:
+        st.session_state.indexeddb_clear_pending = False
+    components.html(bridge_html, height=0, width=0)
 
 
 def _init_session_state() -> None:
     if "monster_service" not in st.session_state:
         st.session_state.monster_service = MonsterDataService.get_instance()
+    if "storage_service" not in st.session_state:
+        st.session_state.storage_service = AccountStorageService.get_instance()
+    if "optimizer_worker" not in st.session_state:
+        st.session_state.optimizer_worker = OptimizerWorker()
     if "profile" not in st.session_state:
-        st.session_state.profile = None
+        restored = st.session_state.storage_service.restore_account()
+        if restored is not None:
+            st.session_state.profile = restored.profile
+            st.session_state.is_demo_mode = restored.is_demo_mode
+            st.session_state.loaded_file_sig = restored.file_signature
+        else:
+            st.session_state.profile = None
     if "is_demo_mode" not in st.session_state:
         st.session_state.is_demo_mode = False
+    if "loaded_file_sig" not in st.session_state:
+        st.session_state.loaded_file_sig = None
+    if "indexeddb_clear_pending" not in st.session_state:
+        st.session_state.indexeddb_clear_pending = False
     if "inventory_mode" not in st.session_state:
         st.session_state.inventory_mode = "pve"
     if "last_opt_result" not in st.session_state:
@@ -751,9 +747,24 @@ def render_tab_optimizer(
             pool = profile.get_available_runes(
                 mode=mode, excluded_unit_ids=excluded_units
             )
-            res = optimize_monster_builds(
-                monster=selected_monster, available_runes=pool, constraints=cfg
+            progress_bar = st.progress(0.0, text="Iniciando worker de optimización Branch & Bound...")
+            worker: OptimizerWorker = st.session_state.get(
+                "optimizer_worker", OptimizerWorker()
             )
+
+            def _on_opt_progress(update: OptimizerProgressUpdate) -> None:
+                progress_bar.progress(
+                    min(1.0, max(0.0, update.progress_ratio)),
+                    text=update.stage_label,
+                )
+
+            res = worker.run_monster_optimization(
+                monster=selected_monster,
+                available_runes=pool,
+                constraints=cfg,
+                on_progress=_on_opt_progress,
+            )
+            progress_bar.empty()
             st.session_state.last_opt_result = res
 
         opt_res = st.session_state.last_opt_result
@@ -840,6 +851,14 @@ def render_tab_optimizer(
                     for rid in chosen_build.rune_ids:
                         target_set.add(rid)
                     target_dict[opt_res.unit_id] = chosen_build
+                    storage_svc: AccountStorageService = st.session_state.get(
+                        "storage_service", AccountStorageService.get_instance()
+                    )
+                    storage_svc.save_account(
+                        profile=profile,
+                        is_demo_mode=bool(st.session_state.get("is_demo_mode", False)),
+                        file_signature=str(st.session_state.get("loaded_file_sig") or "custom"),
+                    )
                     st.success(
                         f"Se bloquearon las runas {chosen_build.rune_ids} para {target_mon.name} ({get_element_badge_es(target_mon.element)}) en modo {mode.upper()}."
                     )
@@ -1019,12 +1038,25 @@ def render_tab_speed_tuning(
         f"⚡ Calcular Builds y Bloquear Equipo Completo en Orden de Turno ({mode.upper()})",
         type="primary",
     ):
-        team_results = optimize_team_speed_tuning(
+        team_progress = st.progress(0.0, text="Iniciando optimización secuencial de equipo en worker...")
+        worker: OptimizerWorker = st.session_state.get(
+            "optimizer_worker", OptimizerWorker()
+        )
+
+        def _on_team_progress(update: OptimizerProgressUpdate) -> None:
+            team_progress.progress(
+                min(1.0, max(0.0, update.progress_ratio)),
+                text=update.stage_label,
+            )
+
+        team_results = worker.run_team_optimization(
             profile=profile,
             team_requests=team_opt_reqs,
             mode=mode,
             lock_winning_builds=True,
+            on_progress=_on_team_progress,
         )
+        team_progress.empty()
         st.session_state.last_team_opt_results = team_results
         target_dict = (
             st.session_state.locked_builds_rta
@@ -1034,6 +1066,14 @@ def render_tab_speed_tuning(
         for res in team_results:
             if res.builds:
                 target_dict[res.unit_id] = res.builds[0]
+        storage_svc: AccountStorageService = st.session_state.get(
+            "storage_service", AccountStorageService.get_instance()
+        )
+        storage_svc.save_account(
+            profile=profile,
+            is_demo_mode=bool(st.session_state.get("is_demo_mode", False)),
+            file_signature=str(st.session_state.get("loaded_file_sig") or "custom"),
+        )
 
     if st.session_state.last_team_opt_results:
         st.markdown(f"#### 🏆 {ES_LOCALE['optimizer']['results_found']} por Turno")
@@ -1087,6 +1127,11 @@ def render_tab_locked_builds(profile: AccountProfile) -> None:
         if st.button("🔓 Desbloquear todas las runas PVE"):
             profile.locked_runes_pve.clear()
             st.session_state.locked_builds_pve.clear()
+            st.session_state.storage_service.save_account(
+                profile=profile,
+                is_demo_mode=bool(st.session_state.get("is_demo_mode", False)),
+                file_signature=str(st.session_state.get("loaded_file_sig") or "custom"),
+            )
             st.rerun()
 
         if st.session_state.locked_builds_pve:
@@ -1114,6 +1159,11 @@ def render_tab_locked_builds(profile: AccountProfile) -> None:
         if st.button("🔓 Desbloquear todas las runas RTA"):
             profile.locked_runes_rta.clear()
             st.session_state.locked_builds_rta.clear()
+            st.session_state.storage_service.save_account(
+                profile=profile,
+                is_demo_mode=bool(st.session_state.get("is_demo_mode", False)),
+                file_signature=str(st.session_state.get("loaded_file_sig") or "custom"),
+            )
             st.rerun()
 
         if st.session_state.locked_builds_rta:

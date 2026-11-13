@@ -10,7 +10,8 @@ wheels/
 # Virtual environments
 .venv/
 
-# Local SQLite bestiary cache & personal SWEX account dumps
+# Local SQLite bestiary cache, IndexedDB state snapshot & personal SWEX account dumps
+.cache/
 data/*.sqlite
 data/*.sqlite-journal
 JmRc_EX-*.json

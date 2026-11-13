@@ -204,7 +204,7 @@ def runes_to_matrix(runes: list[Rune], simulate_plus15: bool = True) -> np.ndarr
     return mat
 
 
-@njit(cache=True)
+@njit(cache=True, nogil=True)
 def _check_sets_and_bonuses_numba(
     s1: int,
     s2: int,
@@ -320,7 +320,7 @@ def _check_sets_and_bonuses_numba(
     return True, hp_pct, atk_pct, def_pct, crate, cdmg, res, acc, swift_active
 
 
-@njit(cache=True)
+@njit(cache=True, nogil=True)
 def _branch_and_bound_kernel(
     m1: np.ndarray,
     m2: np.ndarray,

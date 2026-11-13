@@ -11,6 +11,7 @@ from src.i18n import ES_LOCALE, TOOLTIPS_ES
 from src.models import AccountProfile
 from src.monster_data_service import MonsterDataService
 from src.parser import parse_swex_json
+from src.services.storage import AccountStorageService
 
 DEMO_ACCOUNT_PATH = Path(__file__).resolve().parent / "data" / "demo_account.json"
 
@@ -81,8 +82,10 @@ def activate_account_profile(
     profile: AccountProfile,
     is_demo: bool = False,
     file_signature: str = "demo",
+    storage_service: AccountStorageService | None = None,
+    persist: bool = True,
 ) -> None:
-    """Stores the active AccountProfile in Streamlit session_state and resets build caches."""
+    """Stores the active AccountProfile in session_state and persists it via AccountStorageService."""
     st.session_state.profile = profile
     st.session_state.is_demo_mode = is_demo
     st.session_state.loaded_file_sig = file_signature
@@ -90,10 +93,25 @@ def activate_account_profile(
     st.session_state.last_team_opt_results = None
     st.session_state.locked_builds_pve = {}
     st.session_state.locked_builds_rta = {}
+    st.session_state.indexeddb_clear_pending = False
+
+    if persist:
+        svc = (
+            storage_service
+            or st.session_state.get("storage_service")
+            or AccountStorageService.get_instance()
+        )
+        svc.save_account(
+            profile=profile,
+            is_demo_mode=is_demo,
+            file_signature=file_signature,
+        )
 
 
-def clear_account_state() -> None:
-    """Clears the currently loaded account from session_state to return to the Onboarding Hero."""
+def clear_account_state(
+    storage_service: AccountStorageService | None = None,
+) -> None:
+    """Clears the currently loaded account from session_state and purges persisted IndexedDB/snapshot state."""
     st.session_state.profile = None
     st.session_state.is_demo_mode = False
     st.session_state.loaded_file_sig = None
@@ -101,6 +119,14 @@ def clear_account_state() -> None:
     st.session_state.last_team_opt_results = None
     st.session_state.locked_builds_pve = {}
     st.session_state.locked_builds_rta = {}
+    st.session_state.indexeddb_clear_pending = True
+
+    svc = (
+        storage_service
+        or st.session_state.get("storage_service")
+        or AccountStorageService.get_instance()
+    )
+    svc.clear_account()
 
 
 def render_top_navbar(
