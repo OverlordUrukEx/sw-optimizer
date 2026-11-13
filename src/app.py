@@ -41,8 +41,6 @@ from src.optimizer import (
     OptimizationConstraints,
     OptimizedBuild,
     TeamOptimizationRequestMember,
-    optimize_monster_builds,
-    optimize_team_speed_tuning,
 )
 from src.parser import parse_swex_json
 from src.services.storage import AccountStorageService

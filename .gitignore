@@ -12,6 +12,7 @@ wheels/
 
 # Local SQLite bestiary cache, IndexedDB state snapshot & personal SWEX account dumps
 .cache/
+local_data/
 data/*.sqlite
 data/*.sqlite-journal
 /*.json

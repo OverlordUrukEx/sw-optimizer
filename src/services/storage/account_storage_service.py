@@ -235,7 +235,7 @@ class AccountStorageService:
                         accountStore.put(accountPayload);
                     }}
                 }} catch (txErr) {{
-                    console.warn("IndexedDB transaction skipped:", txErr);
+                    /* IndexedDB write skipped in restricted context */
                 }}
             }};
         }})();

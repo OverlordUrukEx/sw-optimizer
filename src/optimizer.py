@@ -15,7 +15,6 @@ from src.calculator import (
     calculate_min_follower_combat_spd,
     calculate_monster_stats,
     calculate_rune_efficiency,
-    evaluate_active_sets,
     normalize_ratio,
 )
 from src.models import (
@@ -24,7 +23,6 @@ from src.models import (
     Monster,
     MonsterStats,
     Rune,
-    SET_ID_MAP,
     SET_SIZES,
 )
 

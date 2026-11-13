@@ -1,77 +1,114 @@
-# ⚡ SW-Optimizer (SW-OptiPy) — Optimizador de Runas, Artefactos y Speed Tuning para Summoners War
+# ⚡ SW-Optimizer — Optimizador de Runas y Builds para Summoners War
 
-**SW-Optimizer (`SW-OptiPy`)** es una aplicación web de alto rendimiento en español diseñada para la comunidad competitiva de **Summoners War: Sky Arena**. Permite importar el archivo `.json` de tu cuenta generado por **Summoners War Exporter (SWEX)**, analizar la eficiencia real de tu inventario de runas y artefactos, calcular builds óptimas en milisegundos mediante **Branch & Bound compilado con Numba JIT**, y ajustar el **Speed Tuning** exacto por ticks para contenido **PVE / Siege / Arena (`tick = 0.07`)** y **RTA / World Arena (`tick = 0.015`)**.
+**SW-Optimizer** es un optimizador combinatorio de runas, artefactos y *Speed Tuning* de alto rendimiento diseñado específicamente para la comunidad hispanohablante de *Summoners War: Sky Arena*. Combina un motor matemático **Branch & Bound** acelerado con **Numba JIT (`nogil=True`)**, una arquitectura limpia (*Clean Layered Architecture*) basada en principios **SOLID** y persistencia asíncrona *Local-First* mediante **IndexedDB**.
 
----
-
-## ✨ Características Principales
-
-- **Resolución Instantánea de Bestiario en Tiempo $O(1)$ (SWARFARM API v2):**
-  - Mapeo local pre-sincronizado ([`src/data/monster_map.json`](file:///home/johan/VM_Personal/sw_optimizer/src/data/monster_map.json)) con más de **3,140 monstruos**, resolviendo nombres oficiales, elementos (`Agua`, `Fuego`, `Viento`, `Luz`, `Oscuridad`), estrellas base e íconos de avatar sin realizar llamadas HTTP $N+1$ al importar tu cuenta.
-  - Soporte completo para unidades **Second Awakening (2A)** (como *Icaru*, *Spectra*, *Kro*, *Raoq*, *Belladeon*, *Bernard*) y preservación automática de nombres personalizados de **Homúnculos**.
-- **Parser Estricto del Paquete `HubUserLogin` (SWEX):**
-  - **Cálculo exacto de HP Base:** Conversión automática de la estadística de constitución cruda ($\text{HP Base} = \text{CON} \times 15$).
-  - **Soporte para Runas Antiguas (Ancient Runes 6★):** Detección nativa de `class = 16` y evaluación mediante la **Fórmula de Eficiencia de Barion**.
-  - **Suma Automática de Grinds y Gemas (`base + grind`):** Cálculo del valor efectivo real en cada sub-estadística de runa y soporte de estadísticas principales de artefactos (`pri_effect` / `pri_eff`).
-  - **Separación de Inventarios PVE vs RTA:** Manejo independiente de equipamiento y bloqueos de runas entre el modo Normal y World Arena (`world_arena_rune_equip_list` y `world_arena_rune_equip_sync`).
-- **Motor Combinatorio Branch & Bound (`NumPy` + `Numba JIT`):**
-  - Poda temprana en las ranuras principales (**Slots 2, 4 y 6**) validando compatibilidad de sets, comodín **Intangible (`set_id = 25`)**, **Sets Rotos (Broken)** y filtros de estadísticas mínimas (`SPD`, `CR / Tasa Crít.`, `CD / Daño Crít.`, `HP`, `ATK`, `ACC`, `RES`, `EHP`).
-- **Modo Demo Interactivo (`Demo_Summoner`):**
-  - Incluye un perfil real sanitizado ([`src/data/demo_account.json`](file:///home/johan/VM_Personal/sw_optimizer/src/data/demo_account.json), `< 80 KB`) con 8 monstruos representativos (6★, 2A y Homúnculo) y 78 runas para probar todas las funciones del optimizador con un solo clic, sin necesidad de subir archivos propios.
-- **Guía de Usuario Integrada (`HelpGuideModal`) y Localización Competitiva (`es-LA` / `es`):**
-  - Interfaz 100% en español adaptada a la terminología competitiva de Summoners War (`Violent`, `Swift`, `Will`, `Despair`, `Rage`, `Intangible`, `SPD`, `CR`, `CD`, `EHP`), con guía interactiva paso a paso y tooltips explicativos en cada métrica técnica.
-- **Optimización de Memoria:**
-  - Descarta automáticamente nodos y arreglos innecesarios del archivo de exportación de SWEX (`scenario_list`, `quest_active`, `quest_rewarded`, etc.), manteniendo en memoria únicamente las estructuras de monstruos, runas y artefactos.
+La plataforma traduce toda la interfaz, métricas, tablas y guías al español competitivo, preservando intactos los nombres oficiales de los monstruos (*Lushen*, *Verdehile*, *Kro*, *Spectra*) y la nomenclatura internacional de sets de runas (*Violent*, *Swift*, *Will*, *Despair*, *Rage*, *Intangible*).
 
 ---
 
-## 📲 Cómo Obtener tu Archivo JSON (Guía Rápida de SWEX)
+## 🚀 Características Principales
 
-1. **Descarga Summoners War Exporter (SWEX):** Descarga la última versión desde el repositorio oficial de [SW-Exporter en GitHub](https://github.com/Xzandro/sw-exporter/releases).
-2. **Inicia el Proxy:** Abre SWEX en tu PC o Mac, habilita la opción de certificado HTTPS y pulsa **Start Proxy**.
-3. **Conecta tu Dispositivo o Emulador:** Configura el proxy Wi-Fi de tu teléfono o emulador (MuMu Player, BlueStacks, LDPlayer) con la dirección IP y el puerto indicados en la pantalla de SWEX.
-4. **Abre Summoners War:** Inicia sesión en el juego. Cuando se cargue el paquete `HubUserLogin`, SWEX generará automáticamente el archivo `<TuNombre>-<TuID>.json` en su carpeta de salida.
-5. **Cárgalo en SW-Optimizer:** Arrastra y suelta ese archivo `.json` en la zona **Cargar JSON** de la aplicación web.
+- **Resolución Instantánea del Bestiario ($O(1)$):** Nombres, elementos (`💧 Agua`, `🔥 Fuego`, `🌪️ Viento`, `✨ Luz`, `🌑 Oscuridad`) e íconos oficiales sincronizados con la API v2 de **SWARFARM** mediante el diccionario estático [`src/data/monster_map.json`](file:///home/johan/VM_Personal/sw_optimizer/src/data/monster_map.json) (`3,141` especies mapeadas por `com2us_id`), con soporte completo para *Second Awakening (2A)* y *Homúnculos* sin realizar llamadas individuales ($N+1$) durante la importación.
+- **Precisión Matemática Com2uS:**
+  - Cálculo exacto de **HP Base** a partir del atributo interno de constitución ($\text{HP Base} = \text{CON} \times 15$).
+  - Soporte nativo para **Runas Antiguas (Ancient Runes 6★)** (`class >= 10` o `rank >= 10`), suma automática de *Grindstones* (`valor_base + grind_val`) e indicador de *Enchanted Gems*.
+  - Lógica completa de comodín para el set **Intangible (`set_id = 25`)**, capaz de reemplazar automáticamente `1` pieza faltante de cualquier set incompleto de 4 o 2 piezas (máximo 1 activa por build).
+  - Separación estricta de inventarios y bloqueos entre **Modo Normal (PVE / Siege / Arena)** y **Modo RTA (World Arena)**.
+- **Arquitectura Local-First (`IndexedDB`):** Persistencia asíncrona en el navegador (`SWOptimizerDB`) sin el cuello de botella ni el límite síncrono de 5 MB de `localStorage`. Tu inventario normalizado y tus builds bloqueadas se mantienen automáticamente al recargar la página (`F5`) sin enviarse a ningún servidor externo.
+- **Motor de Optimización Multihilo (*Web Workers*):** Cálculo de permutaciones en segundo plano ([`src/workers/optimizer_worker.py`](file:///home/johan/VM_Personal/sw_optimizer/src/workers/optimizer_worker.py) y [`src/workers/optimizer.worker.js`](file:///home/johan/VM_Personal/sw_optimizer/src/workers/optimizer.worker.js)) con poda temprana (*Branch and Bound*) sobre los slots `(2, 4, 6)` y reporte de progreso en tiempo real para mantener la interfaz fluida a 60 FPS.
+- **Modo Demo y Guía Integrada:** Prueba inmediata en un clic con una cuenta de demostración 100% anonimizada ([`src/data/demo_account.json`](file:///home/johan/VM_Personal/sw_optimizer/src/data/demo_account.json) — `Demo_Summoner`) y modal interactivo paso a paso (**"📖 Guía de Uso"**) integrado en la barra de navegación superior.
 
 ---
 
-## 🛠️ Instalación y Despliegue Local (Para Desarrolladores)
+## 🏗️ Arquitectura del Proyecto (Clean Architecture & SOLID)
 
-### Requisitos Previos
-- **Python** `>= 3.14`
-- **[uv](https://docs.astral.sh/uv/)** (gestor de paquetes y entornos virtuales ultrarrápido)
-- **Git**
+El código fuente sigue una arquitectura en capas con separación estricta de responsabilidades (**SRP**, **OCP**, **DIP** y **DRY**):
 
-### 1. Clonar el repositorio e instalar dependencias
+```text
+sw-optimizer/
+├── scripts/
+│   ├── sync_monsters.py                 # Sincronizador CLI del bestiario SWARFARM v2 -> monster_map.json
+│   └── generate_demo_account.py         # Generador y sanitizador sin PII de demo_account.json (< 150 KB)
+├── src/
+│   ├── domain/                          # Capa de Dominio Pura (Single Source of Truth)
+│   │   ├── __init__.py                  # Exportaciones del dominio
+│   │   ├── rune_set_mechanics.py        # Reglas declarativas de sets (4-set, 2-set, Broken e Intangible 25)
+│   │   └── stat_calculator.py           # Fórmulas matemáticas (Eficiencia Barion, EHP, Daño, SPD Combate)
+│   ├── services/
+│   │   └── storage/
+│   │       └── account_storage_service.py # Persistencia asíncrona IndexedDB (SWOptimizerDB) + Snapshot F5
+│   ├── workers/
+│   │   ├── optimizer_worker.py          # Worker multihilo (nogil=True) con progreso en vivo
+│   │   └── optimizer.worker.js          # Web Worker cliente para poda Branch & Bound en navegador
+│   ├── i18n/
+│   │   ├── __init__.py                  # Cargador de localización y badges de elemento
+│   │   └── es.json                      # Diccionario centralizado en español competitivo (es-LA / es)
+│   ├── data/
+│   │   ├── monster_map.json             # Diccionario O(1) de 3,141 monstruos de SWARFARM
+│   │   └── demo_account.json            # Cuenta demo sanitizada (Demo_Summoner, 8 unidades, 30 runas libres)
+│   ├── models.py                        # Modelos Pydantic (Monster, Rune, Artifact, AccountProfile)
+│   ├── monster_data_service.py          # Servicio O(1) de resolución de metadatos e íconos de monstruos
+│   ├── parser.py                        # Ingesta y normalización de archivos JSON de SWEX
+│   ├── calculator.py                    # Fachada de compatibilidad y simulador de ticks PVE (0.07) / RTA (0.015)
+│   ├── optimizer.py                     # Núcleo combinatorio Numba JIT (@njit(cache=True, nogil=True))
+│   ├── ui_components.py                 # Hero de bienvenida, cargador Demo y modal Guía de Uso
+│   └── app.py                           # Interfaz web principal en Streamlit
+├── tests/                               # Suite de pruebas unitarias y de integración (pytest)
+├── pyproject.toml                       # Configuración del paquete y dependencias
+└── README.md                            # Documentación técnica y guía de usuario
+```
+
+---
+
+## 📖 Guía Rápida de Uso (Para Jugadores)
+
+### 1. Cómo exportar tu archivo `TuInvocador-12345678.json` desde SWEX
+1. Descarga e inicia **Summoners War Exporter (SWEX)** en tu PC.
+2. Activa el proxy integrado de SWEX y conecta tu dispositivo móvil o emulador a la misma red local configurando el proxy Wi-Fi (con el certificado HTTPS de SWEX instalado).
+3. Inicia sesión en *Summoners War: Sky Arena*. Al cargar tu isla, SWEX interceptará el paquete `HubUserLogin` y guardará automáticamente el archivo **`TuInvocador-12345678.json`** en tu carpeta de exportaciones.
+
+### 2. Cargar tu cuenta o usar el Modo Demo
+- **Subir tu JSON:** Arrastra y suelta tu archivo **`TuInvocador-12345678.json`** en la zona **"📤 Cargar JSON de tu Cuenta (SWEX)"** de la pantalla principal o desde la barra lateral.
+- **Probar sin archivo propio:** Haz clic en el botón **"🎮 Probar Cuenta Demo"** para cargar al instante la cuenta de prueba `Demo_Summoner` con monstruos 6★, unidades *Second Awakening (2A)*, Homúnculo y decenas de runas listas para optimizar.
+- **Persistencia automática:** Tu cuenta permanecerá activa aunque recargues la página con `F5`. Cuando desees cambiar de archivo, pulsa **"🔄 Cambiar Cuenta / Limpiar"** en la barra superior.
+
+---
+
+## 🛠️ Instalación y Comandos (Para Desarrolladores)
+
+### 1. Clonar el repositorio
 ```bash
 git clone https://github.com/OverlordUrukEx/sw-optimizer.git
 cd sw-optimizer
+```
+
+### 2. Instalar dependencias
+Con **uv** (entorno Python nativo):
+```bash
 uv sync
 ```
+*(O en entornos con scripts envolventes de Node: `npm install`)*
 
-### 2. Sincronizar el catálogo del Bestiario desde SWARFARM (Opcional)
-El repositorio ya incluye [`src/data/monster_map.json`](file:///home/johan/VM_Personal/sw_optimizer/src/data/monster_map.json) y [`src/data/demo_account.json`](file:///home/johan/VM_Personal/sw_optimizer/src/data/demo_account.json). Para actualizar el catálogo de monstruos contra la API v2 de SWARFARM o regenerar la cuenta demo:
+### 3. Sincronizar el diccionario del bestiario (`monster_map.json`) desde SWARFARM
 ```bash
-# Actualizar src/data/monster_map.json desde https://swarfarm.com/api/v2/monsters/
 uv run python scripts/sync_monsters.py
-
-# Regenerar src/data/demo_account.json
-uv run python scripts/generate_demo_account.py
+# Equivalente script: npm run sync-monsters
 ```
 
-### 3. Iniciar el servidor de desarrollo (Interfaz Web)
+### 4. Iniciar el servidor de desarrollo y verificar compilación / pruebas
 ```bash
+# Iniciar la aplicación web interactiva
 uv run streamlit run src/app.py
-```
+# Equivalente script: npm run dev
 
-### 4. Ejecutar la suite de pruebas automatizadas (`pytest`)
-```bash
+# Ejecutar verificación de compilación y suite completa de pruebas
 uv run pytest -v
+# Equivalente script: npm run build
 ```
 
 ---
 
 ## 🔒 Privacidad y Seguridad
 
-- **Procesamiento 100% Local:** Tu archivo `.json` de SWEX se analiza exclusivamente en la memoria local de tu sesión; tus runas, monstruos e identificadores de cuenta nunca se envían a servidores externos.
-- **Protección en Git (`.gitignore`):** Las exportaciones personales de cuentas de SWEX (`/*.json` / `Invocador-12345678.json`) y cachés locales están excluidas en [`.gitignore`](file:///home/johan/VM_Personal/sw_optimizer/.gitignore) para evitar subir datos sensibles de cuentas reales al repositorio público, manteniendo únicamente el archivo anonimizado [`src/data/demo_account.json`](file:///home/johan/VM_Personal/sw_optimizer/src/data/demo_account.json).
+- **Procesamiento 100% Local (*Local-First*):** Todo el análisis del archivo `TuInvocador-12345678.json`, el cálculo de estadísticas y la persistencia en `IndexedDB` ocurren localmente en tu sesión. Tus runas, monstruos e identificadores de cuenta jamás se transmiten a servidores de terceros.
+- **Protección Estricta en Git (`.gitignore`):** El archivo [`.gitignore`](file:///home/johan/VM_Personal/sw_optimizer/.gitignore) está configurado para bloquear cualquier exportación personal de SWEX en la raíz (`/*.json`) o dentro del directorio privado `local_data/`, así como cachés temporales (`.cache/`). Únicamente se versionan en el repositorio los catálogos públicos y anonimizados [`src/data/monster_map.json`](file:///home/johan/VM_Personal/sw_optimizer/src/data/monster_map.json) y [`src/data/demo_account.json`](file:///home/johan/VM_Personal/sw_optimizer/src/data/demo_account.json).

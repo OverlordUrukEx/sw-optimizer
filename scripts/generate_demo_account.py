@@ -43,7 +43,14 @@ PRIORITY_UNIT_MASTER_IDS: list[int] = [
 
 
 def _discover_local_swex_source() -> Path:
-    """Locates a local SWEX export in the workspace root without hardcoding personal filenames."""
+    """Locates a local SWEX export in `local_data/` or the workspace root without hardcoding personal filenames."""
+    local_data_dir = PROJECT_ROOT / "local_data"
+    if local_data_dir.is_dir():
+        local_candidates = sorted(
+            p for p in local_data_dir.glob("*.json") if p.is_file()
+        )
+        if local_candidates:
+            return local_candidates[0]
     candidates = sorted(
         p
         for p in PROJECT_ROOT.glob("*-*.json")
@@ -51,7 +58,7 @@ def _discover_local_swex_source() -> Path:
     )
     if candidates:
         return candidates[0]
-    return PROJECT_ROOT / "sample_swex.json"
+    return DEFAULT_DEMO_OUTPUT
 
 
 def _sanitize_rune(

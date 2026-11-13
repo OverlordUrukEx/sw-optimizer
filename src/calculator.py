@@ -142,7 +142,7 @@ class SpeedTuneReport(BaseModel):
 
 def get_tick_size(mode: Literal["pve", "rta"] = "pve") -> float:
     """Returns the ATB fill multiplier per tick (PVE 0.07, RTA 0.015)."""
-    return StatCalculator.get_tick_size(mode)
+    return RTA_TICK_SIZE if mode == "rta" else PVE_TICK_SIZE
 
 
 def calculate_ticks_to_turn(

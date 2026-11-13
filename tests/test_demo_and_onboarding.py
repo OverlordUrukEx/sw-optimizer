@@ -3,15 +3,12 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 from src.optimizer import OptimizationConstraints, optimize_monster_builds
 from src.ui_components import (
     DEMO_ACCOUNT_PATH,
     TOOLTIPS,
     HelpGuideModal,
-    activate_account_profile,
-    clear_account_state,
     load_demo_account_profile,
 )
 
