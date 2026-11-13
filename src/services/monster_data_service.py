@@ -14,7 +14,9 @@ from pydantic import BaseModel, Field
 SWARFARM_MONSTERS_API_URL = "https://swarfarm.com/api/v2/monsters/"
 SWARFARM_ICON_BASE_URL = "https://swarfarm.com/static/herders/images/monsters/"
 
-DEFAULT_MONSTER_MAP_PATH = Path(__file__).resolve().parent / "data" / "monster_map.json"
+DEFAULT_MONSTER_MAP_PATH = (
+    Path(__file__).resolve().parent.parent / "data" / "monster_map.json"
+)
 CACHE_SCHEMA_VERSION = 1
 DEFAULT_CACHE_TTL_SECONDS = 7 * 24 * 3600  # 7 days
 

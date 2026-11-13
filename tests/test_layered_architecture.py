@@ -6,17 +6,23 @@ import asyncio
 from pathlib import Path
 
 from src.domain import (
+    Monster,
+    Rune,
     RuneSetMechanics,
+    RuneSubstat,
     StatCalculator,
+    SwConstants,
 )
-from src.models import Monster, Rune, RuneSubstat
-from src.optimizer import OptimizationConstraints, TeamOptimizationRequestMember
-from src.services.storage import (
+from src.services import (
     INDEXED_DB_NAME,
     AccountStorageService,
+    MonsterDataService,
+    OptimizationConstraints,
+    OptimizerProgressUpdate,
+    OptimizerWorker,
+    TeamOptimizationRequestMember,
 )
-from src.ui_components import load_demo_account_profile
-from src.workers import OptimizerProgressUpdate, OptimizerWorker
+from src.ui import load_demo_account_profile
 
 
 def _make_rune(
@@ -137,8 +143,7 @@ def test_account_storage_service_persistence_and_indexeddb_bridge(tmp_path: Path
     assert 999001 in restored.profile.locked_runes_pve
 
     # Verify IndexedDB bridge script uses window.indexedDB (SWOptimizerDB) instead of 5MB localStorage
-    from src.monster_data_service import MonsterDataService
-
+    assert SwConstants.INTANGIBLE_SET_ID == 25
     bridge_html = AccountStorageService.build_indexeddb_bridge_html(
         monster_service=MonsterDataService.get_instance(),
         profile=restored.profile,

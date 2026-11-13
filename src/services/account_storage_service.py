@@ -10,8 +10,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from src.models import AccountProfile
-from src.monster_data_service import MonsterDataService
+from src.domain.models import AccountProfile
+from src.services.monster_data_service import MonsterDataService
 
 INDEXED_DB_NAME = "SWOptimizerDB"
 INDEXED_DB_VERSION = 1
@@ -20,7 +20,7 @@ MONSTER_MAP_OBJECT_STORE = "monster_map"
 ACTIVE_ACCOUNT_KEY = "active_account_v1"
 
 DEFAULT_STATE_SNAPSHOT_PATH = (
-    Path(__file__).resolve().parent.parent.parent / ".cache" / "active_account_state.json"
+    Path(__file__).resolve().parent.parent / ".cache" / "active_account_state.json"
 )
 
 

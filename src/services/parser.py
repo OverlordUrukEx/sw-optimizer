@@ -6,14 +6,14 @@ import json
 from pathlib import Path
 from typing import Any
 
-from src.models import (
+from src.domain.models import (
     AccountProfile,
     Artifact,
     Monster,
     MonsterMasterData,
     Rune,
 )
-from src.monster_data_service import (
+from src.services.monster_data_service import (
     DEFAULT_MONSTER_MAP_PATH,
     MonsterDataService,
     MonsterMetadata,

@@ -5,16 +5,16 @@ from __future__ import annotations
 from pathlib import Path
 from unittest.mock import patch
 
+from scripts.sample_generator import generate_sample_swex_dict
 from src.app import build_monsters_dataframe, filter_monsters, format_monster_label
-from src.monster_data_service import (
+from src.services.monster_data_service import (
     DEFAULT_MONSTER_MAP_PATH,
     SWARFARM_ICON_BASE_URL,
     MonsterDataService,
     format_unknown_monster_name,
     infer_element_from_com2us_id,
 )
-from src.parser import parse_swex_json
-from src.sample_generator import generate_sample_swex_dict
+from src.services.parser import parse_swex_json
 
 
 def test_monster_data_service_o1_lookup_and_bundled_map() -> None:

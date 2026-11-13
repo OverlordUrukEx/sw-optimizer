@@ -4,15 +4,15 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from src.models import Monster, Rune
-from src.optimizer import (
+from scripts.sample_generator import generate_sample_swex_dict
+from src.domain.models import Monster, Rune
+from src.services.optimizer import (
     OptimizationConstraints,
     TeamOptimizationRequestMember,
     optimize_monster_builds,
     optimize_team_speed_tuning,
 )
-from src.parser import BestiaryCache, parse_swex_json
-from src.sample_generator import generate_sample_swex_dict
+from src.services.parser import BestiaryCache, parse_swex_json
 
 
 def test_optimizer_finds_valid_builds_with_constraints(tmp_path: Path) -> None:

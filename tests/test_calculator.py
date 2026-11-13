@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from src.calculator import (
+from src.domain.calculator import (
     PVE_TICK_SIZE,
     RTA_TICK_SIZE,
     SpeedTuneMember,
@@ -17,7 +17,7 @@ from src.calculator import (
     simulate_rune_plus15,
     simulate_speed_tuning,
 )
-from src.models import Monster, Rune
+from src.domain.models import Monster, Rune
 
 
 def test_barion_rune_efficiency_formula() -> None:

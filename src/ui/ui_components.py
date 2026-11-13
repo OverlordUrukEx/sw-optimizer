@@ -7,13 +7,15 @@ from pathlib import Path
 
 import streamlit as st
 
+from src.domain.models import AccountProfile
 from src.i18n import ES_LOCALE, TOOLTIPS_ES
-from src.models import AccountProfile
-from src.monster_data_service import MonsterDataService
-from src.parser import parse_swex_json
-from src.services.storage import AccountStorageService
+from src.services.account_storage_service import AccountStorageService
+from src.services.monster_data_service import MonsterDataService
+from src.services.parser import parse_swex_json
 
-DEMO_ACCOUNT_PATH = Path(__file__).resolve().parent / "data" / "demo_account.json"
+DEMO_ACCOUNT_PATH = (
+    Path(__file__).resolve().parent.parent / "data" / "demo_account.json"
+)
 
 # Export centralized Spanish tooltips dictionary
 TOOLTIPS: dict[str, str] = TOOLTIPS_ES

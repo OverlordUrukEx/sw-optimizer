@@ -1,29 +1,46 @@
-"""Pure domain layer for SW-OptiPy (`RuneSetMechanics`, `StatCalculator`, and domain models)."""
+"""Pure domain package (`SwConstants`, models, `StatCalculator`, `RuneSetMechanics`, and speed-tuning calculations)."""
 
 from __future__ import annotations
 
-from src.domain.rune_set_mechanics import (
-    INTANGIBLE_SET_ID,
-    SWIFT_SET_ID,
+from src.domain.calculator import (
     RuneSetMechanics,
     SetBonusVector,
-)
-from src.domain.stat_calculator import (
-    PVE_TICK_SIZE,
-    RTA_TICK_SIZE,
+    SpeedTuneEntryResult,
+    SpeedTuneMember,
+    SpeedTuneReport,
     StatCalculator,
+    calculate_combat_spd,
+    calculate_ehp,
+    calculate_min_follower_combat_spd,
+    calculate_monster_stats,
+    calculate_rune_efficiency,
+    calculate_ticks_to_turn,
+    evaluate_active_sets,
+    get_tick_size,
     normalize_ratio,
+    simulate_rune_plus15,
+    simulate_speed_tuning,
 )
-from src.models import (
+from src.domain.constants import (
+    INTANGIBLE_SET_ID,
+    MAIN_STAT_MAX_5STAR,
+    MAIN_STAT_MAX_6STAR,
     MAX_ROLL_6STAR,
     NAME_TO_SET_ID,
+    PVE_TICK_SIZE,
+    RTA_TICK_SIZE,
     SET_ID_MAP,
     SET_SIZES,
     SET_STAT_BONUSES,
     STAT_ID_MAP,
+    SWIFT_SET_ID,
+    SwConstants,
+)
+from src.domain.models import (
     AccountProfile,
     Artifact,
     Monster,
+    MonsterMasterData,
     MonsterStats,
     Rune,
     RuneSubstat,
@@ -33,8 +50,11 @@ __all__ = [
     "AccountProfile",
     "Artifact",
     "INTANGIBLE_SET_ID",
+    "MAIN_STAT_MAX_5STAR",
+    "MAIN_STAT_MAX_6STAR",
     "MAX_ROLL_6STAR",
     "Monster",
+    "MonsterMasterData",
     "MonsterStats",
     "NAME_TO_SET_ID",
     "PVE_TICK_SIZE",
@@ -48,6 +68,20 @@ __all__ = [
     "STAT_ID_MAP",
     "SWIFT_SET_ID",
     "SetBonusVector",
+    "SpeedTuneEntryResult",
+    "SpeedTuneMember",
+    "SpeedTuneReport",
     "StatCalculator",
+    "SwConstants",
+    "calculate_combat_spd",
+    "calculate_ehp",
+    "calculate_min_follower_combat_spd",
+    "calculate_monster_stats",
+    "calculate_rune_efficiency",
+    "calculate_ticks_to_turn",
+    "evaluate_active_sets",
+    "get_tick_size",
     "normalize_ratio",
+    "simulate_rune_plus15",
+    "simulate_speed_tuning",
 ]

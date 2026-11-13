@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from src.models import MAIN_STAT_MAX_6STAR, Monster, Rune
-from src.parser import BestiaryCache, parse_swex_json
-from src.sample_generator import ensure_sample_swex_file, generate_sample_swex_dict
+from scripts.sample_generator import ensure_sample_swex_file, generate_sample_swex_dict
+from src.domain.models import MAIN_STAT_MAX_6STAR, Monster, Rune
+from src.services.parser import BestiaryCache, parse_swex_json
 
 
 def test_monster_base_hp_con_times_15() -> None:

@@ -15,44 +15,40 @@ La plataforma traduce toda la interfaz, métricas, tablas y guías al español c
   - Lógica completa de comodín para el set **Intangible (`set_id = 25`)**, capaz de reemplazar automáticamente `1` pieza faltante de cualquier set incompleto de 4 o 2 piezas (máximo 1 activa por build).
   - Separación estricta de inventarios y bloqueos entre **Modo Normal (PVE / Siege / Arena)** y **Modo RTA (World Arena)**.
 - **Arquitectura Local-First (`IndexedDB`):** Persistencia asíncrona en el navegador (`SWOptimizerDB`) sin el cuello de botella ni el límite síncrono de 5 MB de `localStorage`. Tu inventario normalizado y tus builds bloqueadas se mantienen automáticamente al recargar la página (`F5`) sin enviarse a ningún servidor externo.
-- **Motor de Optimización Multihilo (*Web Workers*):** Cálculo de permutaciones en segundo plano ([`src/workers/optimizer_worker.py`](file:///home/johan/VM_Personal/sw_optimizer/src/workers/optimizer_worker.py) y [`src/workers/optimizer.worker.js`](file:///home/johan/VM_Personal/sw_optimizer/src/workers/optimizer.worker.js)) con poda temprana (*Branch and Bound*) sobre los slots `(2, 4, 6)` y reporte de progreso en tiempo real para mantener la interfaz fluida a 60 FPS.
+- **Motor de Optimización Multihilo (*Background Workers*):** Cálculo de permutaciones en segundo plano ([`src/services/optimizer.py`](file:///home/johan/VM_Personal/sw_optimizer/src/services/optimizer.py)) con poda temprana (*Branch and Bound*) sobre los slots `(2, 4, 6)` y reporte de progreso en tiempo real para mantener la interfaz fluida a 60 FPS.
 - **Modo Demo y Guía Integrada:** Prueba inmediata en un clic con una cuenta de demostración 100% anonimizada ([`src/data/demo_account.json`](file:///home/johan/VM_Personal/sw_optimizer/src/data/demo_account.json) — `Demo_Summoner`) y modal interactivo paso a paso (**"📖 Guía de Uso"**) integrado en la barra de navegación superior.
 
 ---
 
 ## 🏗️ Arquitectura del Proyecto (Clean Architecture & SOLID)
 
-El código fuente sigue una arquitectura en capas con separación estricta de responsabilidades (**SRP**, **OCP**, **DIP** y **DRY**):
+El código fuente está consolidado en una única estructura modular sin archivos sueltos ni duplicados, aplicando una separación estricta de responsabilidades (**SRP**, **OCP**, **DIP** y **DRY**):
 
 ```text
 sw-optimizer/
 ├── scripts/
 │   ├── sync_monsters.py                 # Sincronizador CLI del bestiario SWARFARM v2 -> monster_map.json
-│   └── generate_demo_account.py         # Generador y sanitizador sin PII de demo_account.json (< 150 KB)
+│   ├── generate_demo_account.py         # Generador y sanitizador sin PII de demo_account.json (< 150 KB)
+│   └── sample_generator.py              # Generador CLI de perfiles sintéticos de prueba
 ├── src/
-│   ├── domain/                          # Capa de Dominio Pura (Single Source of Truth)
-│   │   ├── __init__.py                  # Exportaciones del dominio
-│   │   ├── rune_set_mechanics.py        # Reglas declarativas de sets (4-set, 2-set, Broken e Intangible 25)
-│   │   └── stat_calculator.py           # Fórmulas matemáticas (Eficiencia Barion, EHP, Daño, SPD Combate)
-│   ├── services/
-│   │   └── storage/
-│   │       └── account_storage_service.py # Persistencia asíncrona IndexedDB (SWOptimizerDB) + Snapshot F5
-│   ├── workers/
-│   │   ├── optimizer_worker.py          # Worker multihilo (nogil=True) con progreso en vivo
-│   │   └── optimizer.worker.js          # Web Worker cliente para poda Branch & Bound en navegador
-│   ├── i18n/
-│   │   ├── __init__.py                  # Cargador de localización y badges de elemento
-│   │   └── es.json                      # Diccionario centralizado en español competitivo (es-LA / es)
+│   ├── app.py                           # Único punto de entrada principal (Streamlit Web UI)
 │   ├── data/
 │   │   ├── monster_map.json             # Diccionario O(1) de 3,141 monstruos de SWARFARM
 │   │   └── demo_account.json            # Cuenta demo sanitizada (Demo_Summoner, 8 unidades, 30 runas libres)
-│   ├── models.py                        # Modelos Pydantic (Monster, Rune, Artifact, AccountProfile)
-│   ├── monster_data_service.py          # Servicio O(1) de resolución de metadatos e íconos de monstruos
-│   ├── parser.py                        # Ingesta y normalización de archivos JSON de SWEX
-│   ├── calculator.py                    # Fachada de compatibilidad y simulador de ticks PVE (0.07) / RTA (0.015)
-│   ├── optimizer.py                     # Núcleo combinatorio Numba JIT (@njit(cache=True, nogil=True))
-│   ├── ui_components.py                 # Hero de bienvenida, cargador Demo y modal Guía de Uso
-│   └── app.py                           # Interfaz web principal en Streamlit
+│   ├── domain/                          # Capa de Dominio Pura (Single Source of Truth)
+│   │   ├── constants.py                 # Constantes oficiales del juego (SwConstants, tablas de sets y rolls)
+│   │   ├── models.py                    # Modelos Pydantic (Monster, Rune, Artifact, AccountProfile)
+│   │   └── calculator.py                # StatCalculator, RuneSetMechanics (Intangible 25) y Speed Tuning
+│   ├── services/                        # Servicios de Aplicación, Persistencia y Optimización
+│   │   ├── parser.py                    # Ingesta, validación y normalización de archivos JSON de SWEX
+│   │   ├── monster_data_service.py      # Servicio O(1) de resolución de metadatos e íconos de monstruos
+│   │   ├── optimizer.py                 # Motor Branch & Bound Numba JIT (nogil=True) + OptimizerWorker
+│   │   └── account_storage_service.py   # Persistencia asíncrona IndexedDB (SWOptimizerDB) + Snapshot F5
+│   ├── ui/
+│   │   └── ui_components.py             # Hero de bienvenida, cargador Demo y modal Guía de Uso
+│   └── i18n/
+│       ├── __init__.py                  # Cargador de localización y badges de elemento
+│       └── es.json                      # Diccionario centralizado en español competitivo (es-LA / es)
 ├── tests/                               # Suite de pruebas unitarias y de integración (pytest)
 ├── pyproject.toml                       # Configuración del paquete y dependencias
 └── README.md                            # Documentación técnica y guía de usuario

@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from scripts.sample_generator import generate_sample_swex_dict
 from src.app import _build_runes_dataframe
-from src.parser import BestiaryCache, parse_swex_json
-from src.sample_generator import generate_sample_swex_dict
+from src.services.parser import BestiaryCache, parse_swex_json
 
 
 def test_app_runes_dataframe_builder(tmp_path: Path) -> None:

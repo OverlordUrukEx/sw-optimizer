@@ -12,7 +12,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.models import MAIN_STAT_MAX_6STAR
+from src.domain.constants import MAIN_STAT_MAX_6STAR
 
 
 def _make_rune(

@@ -15,9 +15,14 @@ import polars as pl
 import streamlit as st
 import streamlit.components.v1 as components
 
-from src.calculator import (
+from src.domain import (
+    AccountProfile,
+    Monster,
+    NAME_TO_SET_ID,
     PVE_TICK_SIZE,
     RTA_TICK_SIZE,
+    SET_ID_MAP,
+    STAT_ID_MAP,
     SpeedTuneMember,
     calculate_monster_stats,
     calculate_rune_efficiency,
@@ -29,29 +34,23 @@ from src.i18n import (
     get_element_badge_es,
     translate_element,
 )
-from src.models import (
-    AccountProfile,
-    Monster,
-    NAME_TO_SET_ID,
-    SET_ID_MAP,
-    STAT_ID_MAP,
-)
-from src.monster_data_service import MonsterDataService
-from src.optimizer import (
+from src.services import (
+    AccountStorageService,
+    MonsterDataService,
     OptimizationConstraints,
     OptimizedBuild,
+    OptimizerProgressUpdate,
+    OptimizerWorker,
     TeamOptimizationRequestMember,
+    parse_swex_json,
 )
-from src.parser import parse_swex_json
-from src.services.storage import AccountStorageService
-from src.ui_components import (
+from src.ui import (
     TOOLTIPS,
     activate_account_profile,
     load_demo_account_profile,
     render_empty_state_hero,
     render_top_navbar,
 )
-from src.workers import OptimizerProgressUpdate, OptimizerWorker
 
 ALL_ELEMENTS: list[str] = ["Water", "Fire", "Wind", "Light", "Dark"]
 

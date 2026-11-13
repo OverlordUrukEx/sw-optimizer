@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import json
 
-from src.optimizer import OptimizationConstraints, optimize_monster_builds
-from src.ui_components import (
+from src.services.optimizer import OptimizationConstraints, optimize_monster_builds
+from src.ui.ui_components import (
     DEMO_ACCOUNT_PATH,
     TOOLTIPS,
     HelpGuideModal,
